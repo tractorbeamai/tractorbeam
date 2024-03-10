@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: "postgres:15"
+    environment:
+      POSTGRES_USER: "tractorbeam"
+      POSTGRES_PASSWORD: "tractorbeam"
+      POSTGRES_DB: "tractorbeam"
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tractorbeam"]
+      interval: 1s
+      timeout: 5s
+      retries: 3
+  tractorbeam:
+    build: ./tractorbeam
+    command: bash -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 80 --reload"
+    volumes:
+      - ./tractorbeam:/code
+    ports:
+      - "80:80"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://tractorbeam:tractorbeam@postgres:5432/tractorbeam
+    depends_on:
+      postgres:
+        condition: service_healthy

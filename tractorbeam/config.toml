@@ -1,0 +1,9 @@
+api_keys=["abc"]
+
+[[integrations]]
+enabled=true
+api_key="def"
+
+[[integrations]]
+enabled=true
+api_key="ghi"
