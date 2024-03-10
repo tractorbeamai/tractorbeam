@@ -5,14 +5,14 @@ from ..utils.service_result import ServiceResult
 
 
 class FooService(AppService):
-    def create_item(self, item: FooItemCreate) -> ServiceResult:
-        foo_item = FooCRUD(self.db).create_item(item)
+    async def create_item(self, item: FooItemCreate) -> ServiceResult:
+        foo_item = await FooCRUD(self.db).create_item(item)
         if not foo_item:
             return ServiceResult(AppException.FooCreateItem())
         return ServiceResult(foo_item)
 
-    def get_item(self, item_id: int) -> ServiceResult:
-        foo_item = FooCRUD(self.db).get_item(item_id)
+    async def get_item(self, item_id: int) -> ServiceResult:
+        foo_item = await FooCRUD(self.db).get_item(item_id)
         if not foo_item:
             return ServiceResult(AppException.FooGetItem({"item_id": item_id}))
         if not foo_item.public:

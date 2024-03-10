@@ -16,11 +16,11 @@ router = APIRouter(
 
 @router.post("/item/", response_model=FooItem)
 async def create_item(item: FooItemCreate, db: Annotated[Session, Depends(get_db)]):
-    result = FooService(db).create_item(item)
+    result = await FooService(db).create_item(item)
     return handle_result(result)
 
 
 @router.get("/item/{item_id}", response_model=FooItem)
 async def get_item(item_id: int, db: Annotated[Session, Depends(get_db)]):
-    result = FooService(db).get_item(item_id)
+    result = await FooService(db).get_item(item_id)
     return handle_result(result)

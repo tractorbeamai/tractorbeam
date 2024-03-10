@@ -1,29 +1,20 @@
-import asyncio
 from typing import Iterator
 
-import pytest
 import pytest_asyncio
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from .. import settings
 from ..database import async_engine
 from ..main import app
-
-
-@pytest.fixture(scope="session")
-def event_loop(request) -> Iterator[asyncio.AbstractEventLoop]:
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest_asyncio.fixture
 async def async_client() -> Iterator[AsyncClient]:
     async with AsyncClient(
-        app=app, base_url=f"http://{settings.api_v1_prefix}"
+        transport=ASGITransport(app=app),
+        base_url="http://localhost:80",
     ) as client:
         yield client
 

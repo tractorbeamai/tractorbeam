@@ -6,7 +6,7 @@ from .settings import get_settings
 
 DATABASE_URL = get_settings().database_url
 
-async_engine = create_async_engine(DATABASE_URL, echo=True, future=True)
+async_engine = create_async_engine(DATABASE_URL, future=True)
 
 
 async def get_db() -> AsyncSession:

@@ -1,5 +1,3 @@
-import inspect
-
 from loguru import logger
 
 from .app_exceptions import AppExceptionCase
@@ -34,15 +32,10 @@ class ServiceResult(object):
         pass
 
 
-def caller_info() -> str:
-    info = inspect.getframeinfo(inspect.stack()[2][0])
-    return f"{info.filename}:{info.function}:{info.lineno}"
-
-
 def handle_result(result: ServiceResult):
     if not result.success:
         with result as exception:
-            logger.error(f"{exception} | caller={caller_info()}")
+            logger.error(exception)
             raise exception
     with result as result:
         return result
