@@ -1,7 +1,7 @@
 from ..models import FooItem, FooItemCreate
-from ..services.main import AppCRUD, AppService
 from ..utils.app_exceptions import AppException
 from ..utils.service_result import ServiceResult
+from .common import AppCRUD, AppService
 
 
 class FooService(AppService):
