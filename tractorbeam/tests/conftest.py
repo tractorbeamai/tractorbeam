@@ -1,16 +1,16 @@
 from typing import Iterator
 
-import pytest_asyncio
+import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from ..database import async_engine
-from ..main import app
+from app.database import async_engine
+from app.main import app
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def async_client() -> Iterator[AsyncClient]:
     async with AsyncClient(
         transport=ASGITransport(app=app),
@@ -19,7 +19,7 @@ async def async_client() -> Iterator[AsyncClient]:
         yield client
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest.fixture(scope="function")
 async def async_session() -> Iterator[AsyncSession]:
     session = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
