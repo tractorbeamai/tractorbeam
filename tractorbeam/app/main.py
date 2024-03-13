@@ -2,12 +2,12 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import text
-from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .database import get_db
-from .routers import foo
+from .routers import data, token
 from .utils.app_exceptions import AppExceptionCase, app_exception_handler
 from .utils.request_exceptions import (
     http_exception_handler,
@@ -36,7 +36,8 @@ async def custom_app_exception_handler(request, e):
 # ══════════════════════════════════════════════════════════════════════════════
 
 # ══════════════════════════════════ Routers ═══════════════════════════════════
-app.include_router(foo.router)
+app.include_router(token.router)
+app.include_router(data.router)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

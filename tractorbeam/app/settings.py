@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any
 
-import requests
+import httpx
 import tomllib
 from pydantic import BaseModel, ConfigDict
 from pydantic_settings import (
@@ -23,6 +23,7 @@ class IntegrationSettings(BaseModel):
 
 class Settings(BaseSettings):
     database_url: str
+    secret: str
     cloud: bool = False
     api_keys: list[str]
     integrations: list[IntegrationSettings]
@@ -66,8 +67,7 @@ class RemoteTomlConfigSettingsSource(InitSettingsSource, ConfigFileSourceMixin):
         super().__init__(settings_cls, self.toml_data)
 
     def _load(self, url: str) -> dict[str, Any]:
-        # TODO replace with httpx, drop requests dependency
-        response = requests.get(url)
+        response = httpx.get(url)
         response.raise_for_status()
         return tomllib.loads(response.text)
 
