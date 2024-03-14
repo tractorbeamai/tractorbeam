@@ -16,7 +16,7 @@ RUN /root/.cargo/bin/uv pip install --no-cache --upgrade -r /code/requirements.t
 
 # copy migrations
 COPY ./alembic.ini  /code/alembic.ini
-COPY ./alembic      /code/alembic
+COPY ./migrations   /code/migrations
 
 # copy application code
 COPY ./app /code/app

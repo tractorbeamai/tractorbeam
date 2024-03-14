@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from ..schemas.token import TokenClaimsSchema, TokenSchema
 from ..security import get_api_key
 from ..services.token import TokenService
-from ..utils.service_result import handle_result
+from ..settings import Settings, get_settings
 
 router = APIRouter(
     prefix="/token",
@@ -16,7 +16,7 @@ router = APIRouter(
 
 @router.post("/", response_model=TokenSchema)
 async def create_token(
-    claims: TokenClaimsSchema, api_key: Annotated[str, Depends(get_api_key)]
+    claims: TokenClaimsSchema,
+    settings: Annotated[Settings, Depends(get_settings)],
 ):
-    result = await TokenService().create(claims, api_key)
-    return handle_result(result)
+    return await TokenService().create(claims, settings.secret)

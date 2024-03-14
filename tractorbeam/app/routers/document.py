@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
-from ..schemas.document import DocumentSchemaCreate
+from ..schemas.document import DocumentSchema, DocumentSchemaCreate
+from ..schemas.query import QueryResult
 from ..schemas.token import TokenClaimsSchema
 from ..security import get_token_claims
-from ..services.data import DataService
-from ..utils.service_result import handle_result
+from ..services.document import DocumentService
 
 router = APIRouter(
     prefix="/documents",
@@ -22,10 +22,9 @@ async def create_document(
     item: DocumentSchemaCreate,
     claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
     db: Annotated[AsyncSession, Depends(get_db)],
-):
-    doc_service = DataService(db, claims.tenant_id, claims.tenant_user_id)
-    result = await doc_service.create(item)
-    return handle_result(result)
+) -> DocumentSchema:
+    doc_service = DocumentService(db, claims.tenant_id, claims.tenant_user_id)
+    return await doc_service.create(item)
 
 
 @router.get("/")
@@ -33,7 +32,6 @@ async def query_documents(
     q: str,
     claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
     db: Annotated[AsyncSession, Depends(get_db)],
-):
-    doc_service = DataService(db, claims.tenant_id, claims.tenant_user_id)
-    result = await doc_service.query(q)
-    return handle_result(result)
+) -> list[QueryResult]:
+    doc_service = DocumentService(db, claims.tenant_id, claims.tenant_user_id)
+    return await doc_service.query(q)
