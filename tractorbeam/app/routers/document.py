@@ -35,3 +35,13 @@ async def query_documents(
 ) -> list[QueryResult]:
     doc_service = DocumentService(db, claims.tenant_id, claims.tenant_user_id)
     return await doc_service.query(q)
+
+
+@router.delete("/{document_id}/")
+async def delete_document(
+    document_id: int,
+    claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> bool:
+    doc_service = DocumentService(db, claims.tenant_id, claims.tenant_user_id)
+    return await doc_service.delete(document_id)

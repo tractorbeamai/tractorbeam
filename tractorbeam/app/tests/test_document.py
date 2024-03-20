@@ -1,6 +1,7 @@
 import pytest
 from fastapi import status
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Chunk, Document
@@ -65,3 +66,45 @@ async def test_query_documents(
     assert resp.status_code == status.HTTP_200_OK
     chunks = resp.json()
     assert len(chunks) > 0
+
+
+@pytest.mark.asyncio()
+async def test_delete_document(
+    client: AsyncClient,
+    session: AsyncSession,
+    token_with_claims: tuple[str, TokenClaimsSchema],
+):
+    token, claims = token_with_claims
+
+    document = Document(
+        title="Hello World Document",
+        content="hello world\nchunk 2",
+        tenant_id=claims.tenant_id,
+        tenant_user_id=claims.tenant_user_id,
+        chunks=[
+            Chunk(
+                content="hello world",
+                tenant_id=claims.tenant_id,
+                tenant_user_id=claims.tenant_user_id,
+            ),
+            Chunk(
+                content="chunk 2",
+                tenant_id=claims.tenant_id,
+                tenant_user_id=claims.tenant_user_id,
+            ),
+        ],
+    )
+    session.add(document)
+    await session.commit()
+    await session.refresh(document)
+
+    resp = await client.delete(
+        f"/documents/{document.id}/",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == status.HTTP_200_OK
+
+    stmt = select(Document).where(Document.id == document.id)
+    result = await session.execute(stmt)
+    assert result.scalar() is None

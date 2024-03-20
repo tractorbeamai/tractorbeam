@@ -1,8 +1,8 @@
-"""initial
+"""initial migration
 
-Revision ID: 8166f664b00f
+Revision ID: 0b4af41ca675
 Revises: 
-Create Date: 2024-03-14 05:16:50.587961
+Create Date: 2024-03-20 17:12:31.276444
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8166f664b00f'
+revision: str = '0b4af41ca675'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -36,10 +36,11 @@ def upgrade() -> None:
     sa.Column('content', sa.String(), nullable=False),
     sa.Column('tenant_id', sa.String(), nullable=False),
     sa.Column('tenant_user_id', sa.String(), nullable=False),
-    sa.Column('document_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['document_id'], ['documents.id'], name=op.f('fk_chunks_document_id_documents')),
+    sa.Column('document_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['document_id'], ['documents.id'], name=op.f('fk_chunks_document_id_documents'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_chunks'))
     )
+    op.create_index(op.f('ix_chunks_document_id'), 'chunks', ['document_id'], unique=False)
     op.create_index(op.f('ix_chunks_id'), 'chunks', ['id'], unique=False)
     op.create_index(op.f('ix_chunks_tenant_id'), 'chunks', ['tenant_id'], unique=False)
     op.create_index(op.f('ix_chunks_tenant_user_id'), 'chunks', ['tenant_user_id'], unique=False)
@@ -51,6 +52,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_chunks_tenant_user_id'), table_name='chunks')
     op.drop_index(op.f('ix_chunks_tenant_id'), table_name='chunks')
     op.drop_index(op.f('ix_chunks_id'), table_name='chunks')
+    op.drop_index(op.f('ix_chunks_document_id'), table_name='chunks')
     op.drop_table('chunks')
     op.drop_index(op.f('ix_documents_tenant_user_id'), table_name='documents')
     op.drop_index(op.f('ix_documents_tenant_id'), table_name='documents')

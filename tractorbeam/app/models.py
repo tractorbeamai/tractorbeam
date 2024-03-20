@@ -26,7 +26,10 @@ class Document(Base):
     tenant_id: Mapped[str] = mapped_column(index=True)
     tenant_user_id: Mapped[str] = mapped_column(index=True)
 
-    chunks: Mapped[list["Chunk"]] = relationship(back_populates="document")
+    chunks: Mapped[list["Chunk"]] = relationship(
+        back_populates="document",
+        cascade="all, delete",
+    )
 
     def __repr__(self) -> str:
         return f'Document(id={self.id}, title="{self.title}")'
@@ -41,7 +44,10 @@ class Chunk(Base):
     tenant_id: Mapped[str] = mapped_column(index=True)
     tenant_user_id: Mapped[str] = mapped_column(index=True)
 
-    document_id: Mapped[int | None] = mapped_column(ForeignKey("documents.id"))
+    document_id: Mapped[int | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        index=True,
+    )
     document: Mapped["Document"] = relationship(back_populates="chunks")
 
     def __repr__(self) -> str:
