@@ -69,6 +69,47 @@ async def test_query_documents(
 
 
 @pytest.mark.asyncio()
+async def test_get_document(
+    client: AsyncClient,
+    session: AsyncSession,
+    token_with_claims: tuple[str, TokenClaimsSchema],
+):
+    token, claims = token_with_claims
+
+    # Create a document to fetch later
+    document = Document(
+        title="Test Document for Get",
+        content="This is a test document content.",
+        tenant_id=claims.tenant_id,
+        tenant_user_id=claims.tenant_user_id,
+        chunks=[
+            Chunk(
+                content="This is a test document content.",
+                tenant_id=claims.tenant_id,
+                tenant_user_id=claims.tenant_user_id,
+            ),
+        ],
+    )
+    session.add(document)
+    await session.commit()
+    await session.refresh(document)
+
+    # Fetch the document
+    resp = await client.get(
+        f"/documents/{document.id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["title"] == "Test Document for Get"
+    assert data["content"] == "This is a test document content."
+    assert "chunks" in data
+    assert len(data["chunks"]) == 1
+    assert data["chunks"][0]["content"] == "This is a test document content."
+
+
+@pytest.mark.asyncio()
 async def test_delete_document(
     client: AsyncClient,
     session: AsyncSession,

@@ -41,6 +41,14 @@ class DocumentService:
 
         return DocumentSchema.model_validate(doc_with_chunks)
 
+    async def find_one(self, item_id: int) -> DocumentSchema:
+        doc_crud = DocumentCRUD(self.db, self.tenant_id, self.tenant_user_id)
+        doc = await doc_crud.find_one(item_id)
+        if not doc:
+            raise AppException.DocumentNotFound
+
+        return DocumentSchema.model_validate(doc)
+
     async def query(self, q: str) -> list[QueryResult]:  # noqa: ARG002
         # for now, ignore q and return all documents
         chunk_crud = ChunkCRUD(self.db, self.tenant_id, self.tenant_user_id)

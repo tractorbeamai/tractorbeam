@@ -27,6 +27,16 @@ async def create_document(
     return await doc_service.create(item)
 
 
+@router.get("/{document_id}")
+async def get_document(
+    document_id: int,
+    claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> DocumentSchema:
+    doc_service = DocumentService(db, claims.tenant_id, claims.tenant_user_id)
+    return await doc_service.find_one(document_id)
+
+
 @router.get("/")
 async def query_documents(
     q: str,
