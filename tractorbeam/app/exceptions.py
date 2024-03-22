@@ -39,7 +39,32 @@ class AppException:
             status_code = 404
             AppExceptionCase.__init__(self, status_code, context)
 
+    class ChunkCreationFailed(AppExceptionCase):
+        def __init__(self, context: dict | None = None):
+            status_code = 500
+            AppExceptionCase.__init__(self, status_code, context)
+
     class ChunkNotFound(AppExceptionCase):
         def __init__(self, context: dict | None = None):
             status_code = 404
+            AppExceptionCase.__init__(self, status_code, context)
+
+    class IntegrationAlreadyExists(AppExceptionCase):
+        def __init__(self, context: dict | None = None):
+            status_code = 409
+            AppExceptionCase.__init__(self, status_code, context)
+
+    class IntegrationNotFound(AppExceptionCase):
+        def __init__(self, context: dict | None = None):
+            status_code = 404
+            AppExceptionCase.__init__(self, status_code, context)
+
+    class IntegrationCreationFailed(AppExceptionCase):
+        def __init__(self, context: dict | None = None):
+            status_code = 500
+            AppExceptionCase.__init__(self, status_code, context)
+
+    class IntegrationInvalid(AppExceptionCase):
+        def __init__(self, context: dict | None = None):
+            status_code = 500
             AppExceptionCase.__init__(self, status_code, context)

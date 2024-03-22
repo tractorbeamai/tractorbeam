@@ -5,9 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
 from ..schemas.chunk import ChunkSchema, ChunkSchemaCreate
+from ..schemas.query import Query, QueryResult
 from ..schemas.token import TokenClaimsSchema
 from ..security import get_token_claims
-from ..services.document import ChunkCRUD
+from ..services.chunk import ChunkService
 
 router = APIRouter(
     prefix="/chunks",
@@ -16,37 +17,50 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=ChunkSchema)
+@router.post("/")
 async def create_chunk(
     item: ChunkSchemaCreate,
     claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
     db: Annotated[AsyncSession, Depends(get_db)],
-):
-    chunk_crud = ChunkCRUD(db, claims.tenant_id, claims.tenant_user_id)
-    return await chunk_crud.create(item)
+) -> ChunkSchema:
+    chunk_service = ChunkService(db, claims.tenant_id, claims.tenant_user_id)
+    return await chunk_service.create(item)
 
 
-@router.get("/{chunk_id}", response_model=ChunkSchema)
+@router.get("/")
+async def get_chunks(
+    claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[ChunkSchema]:
+    chunk_service = ChunkService(db, claims.tenant_id, claims.tenant_user_id)
+    return await chunk_service.find_all()
+
+
+@router.get("/{chunk_id}/")
 async def get_chunk(
     chunk_id: int,
     claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
     db: Annotated[AsyncSession, Depends(get_db)],
-):
-    chunk_crud = ChunkCRUD(db, claims.tenant_id, claims.tenant_user_id)
-    return await chunk_crud.find_one(chunk_id)
+) -> ChunkSchema:
+    chunk_service = ChunkService(db, claims.tenant_id, claims.tenant_user_id)
+    return await chunk_service.find_one(chunk_id)
 
 
-@router.delete("/{chunk_id}")
+@router.delete("/{chunk_id}/")
 async def delete_chunk(
     chunk_id: int,
     claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
     db: Annotated[AsyncSession, Depends(get_db)],
-):
-    # TODO(wadefletch): replace with real errors
-    chunk_crud = ChunkCRUD(db, claims.tenant_id, claims.tenant_user_id)
-    success = await chunk_crud.delete(chunk_id)
+) -> bool:
+    chunk_service = ChunkService(db, claims.tenant_id, claims.tenant_user_id)
+    return await chunk_service.delete(chunk_id)
 
-    if not success:
-        return {"message": "Chunk deletion failed"}
 
-    return {"message": "Chunk deleted successfully"}
+@router.post("/query/")
+async def query_chunks(
+    query: Query,
+    claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[QueryResult]:
+    chunk_service = ChunkService(db, claims.tenant_id, claims.tenant_user_id)
+    return await chunk_service.query(query)

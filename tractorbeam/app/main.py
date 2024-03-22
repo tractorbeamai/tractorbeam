@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from .exceptions import AppExceptionCase
-from .routers import chunk, document, health, token
+from .routers import chunk, document, health, integration, token
 
 app = FastAPI()
 
@@ -22,3 +22,4 @@ app.include_router(health.router)
 app.include_router(token.router)
 app.include_router(document.router)
 app.include_router(chunk.router)
+app.include_router(integration.router)

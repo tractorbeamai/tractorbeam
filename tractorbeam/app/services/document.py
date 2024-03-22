@@ -6,7 +6,7 @@ from ..exceptions import AppException
 from ..models import Document
 from ..schemas.chunk import ChunkSchemaCreate
 from ..schemas.document import DocumentSchema, DocumentSchemaCreate
-from ..schemas.query import QueryResult
+from ..schemas.query import Query, QueryResult
 from .chunk import ChunkCRUD
 
 
@@ -46,17 +46,24 @@ class DocumentService:
         doc = await doc_crud.find_one(item_id)
         if not doc:
             raise AppException.DocumentNotFound
-
         return DocumentSchema.model_validate(doc)
 
-    async def query(self, q: str) -> list[QueryResult]:  # noqa: ARG002
+    async def find_all(self) -> list[DocumentSchema]:
+        doc_crud = DocumentCRUD(self.db, self.tenant_id, self.tenant_user_id)
+        docs = await doc_crud.find_all()
+        return [DocumentSchema.model_validate(doc) for doc in docs]
+
+    async def query(self, query: Query) -> list[QueryResult]:  # noqa: ARG002
         # for now, ignore q and return all documents
-        chunk_crud = ChunkCRUD(self.db, self.tenant_id, self.tenant_user_id)
-        db_chunks = await chunk_crud.find_all()
-        return [QueryResult(content=d.content, score=0.5) for d in db_chunks]
+        doc_crud = DocumentCRUD(self.db, self.tenant_id, self.tenant_user_id)
+        docs = await doc_crud.find_all()
+        return [QueryResult(content=d.content, score=0.5) for d in docs]
 
     async def delete(self, item_id: int) -> bool:
         doc_crud = DocumentCRUD(self.db, self.tenant_id, self.tenant_user_id)
+        doc = await doc_crud.find_one(item_id)
+        if not doc:
+            raise AppException.DocumentNotFound
         return await doc_crud.delete(item_id)
 
 
@@ -83,19 +90,32 @@ class DocumentCRUD:
         stmt = (
             select(Document)
             .where(
-                Document.id == item_id
-                and Document.tenant_id == self.tenant_id
-                and Document.tenant_user_id == self.tenant_user_id,
+                (Document.id == item_id)
+                & (Document.tenant_id == self.tenant_id)
+                & (Document.tenant_user_id == self.tenant_user_id),
             )
             .options(selectinload(Document.chunks))
         )
         return await self.db.scalar(stmt)
 
+    async def find_all(self) -> list[Document]:
+        stmt = (
+            select(Document)
+            .where(
+                (Document.tenant_id == self.tenant_id)
+                & (Document.tenant_user_id == self.tenant_user_id),
+            )
+            .options(selectinload(Document.chunks))
+        )
+        result = await self.db.scalars(stmt)
+        return list(result)
+
     async def delete(self, item_id: int) -> bool:
         stmt = delete(Document).where(
-            Document.id == item_id
-            and Document.tenant_id == self.tenant_id
-            and Document.tenant_user_id == self.tenant_user_id,
+            (Document.id == item_id)
+            & (Document.tenant_id == self.tenant_id)
+            & (Document.tenant_user_id == self.tenant_user_id),
         )
         result = await self.db.execute(stmt)
+        await self.db.commit()
         return result.rowcount > 0
