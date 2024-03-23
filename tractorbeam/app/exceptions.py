@@ -11,7 +11,7 @@ class AppExceptionCase(Exception):
 class AppException:
     class DatabaseConnectionFailed(AppExceptionCase):
         def __init__(self, context: dict | None = None):
-            status_code = 500
+            status_code = 503
             AppExceptionCase.__init__(self, status_code, context)
 
     class APIKeyInvalid(AppExceptionCase):

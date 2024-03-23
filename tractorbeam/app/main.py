@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from .exceptions import AppExceptionCase
 from .routers import chunk, document, health, integration, token
 
-app = FastAPI()
+app = FastAPI(root_path="/api/v1")
 
 
 @app.exception_handler(AppExceptionCase)

@@ -10,60 +10,107 @@ from ..schemas.token import TokenClaimsSchema
 
 @pytest.fixture()
 def mock_registry():
-    mock_registry = IntegrationRegistry()
-    mock_registry.upsert(MockOAuth2Integration)
+    registry = IntegrationRegistry()
+    registry.upsert(MockOAuth2Integration)
 
-    app.dependency_overrides[get_integration_registry] = lambda: mock_registry
+    app.dependency_overrides[get_integration_registry] = lambda: registry
 
-    yield mock_registry
+    yield registry
+
+    del app.dependency_overrides[get_integration_registry]
+
+
+@pytest.fixture()
+def mock_empty_registry():
+    registry = IntegrationRegistry()
+
+    app.dependency_overrides[get_integration_registry] = lambda: registry
+
+    yield registry
 
     del app.dependency_overrides[get_integration_registry]
 
 
 @pytest.mark.asyncio()
-async def test_get_integrations(
-    client: AsyncClient,
-    mock_registry: IntegrationRegistry,
-    token_with_claims: tuple[str, TokenClaimsSchema],
-):
-    token, claims = token_with_claims
-    response = await client.get(
-        "/integrations/",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert len(data) > 0
+class TestGetIntegrations:
+    async def test_get_integrations(
+        self,
+        client: AsyncClient,
+        mock_registry: IntegrationRegistry,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
+        response = await client.get(
+            "/integrations/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert len(data) > 0
+
+    async def test_get_integrations_empty(
+        self,
+        client: AsyncClient,
+        mock_empty_registry: IntegrationRegistry,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
+        response = await client.get(
+            "/integrations/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert len(data) == 0  # Expecting an empty list since the registry is empty
+
+    async def test_get_integrations_missing_auth(
+        self,
+        client: AsyncClient,
+        mock_registry: IntegrationRegistry,
+    ):
+        response = await client.get("/integrations/")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.asyncio()
-async def test_get_integration(
-    client: AsyncClient,
-    mock_registry: IntegrationRegistry,
-    token_with_claims: tuple[str, TokenClaimsSchema],
-):
-    token, claims = token_with_claims
+class TestGetIntegration:
+    """GET /api/v1/integrations/{integration_slug}/"""
 
-    response = await client.get(
-        "/integrations/mock/",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert data["slug"] == "mock"
-    assert data["name"] == "Mock Integration"
+    async def test_get_integration(
+        self,
+        client: AsyncClient,
+        mock_registry: IntegrationRegistry,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
 
+        response = await client.get(
+            "/integrations/mock/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["slug"] == "mock"
+        assert data["name"] == "Mock Integration"
 
-@pytest.mark.asyncio()
-async def test_get_integration_not_found(
-    client: AsyncClient,
-    mock_registry: IntegrationRegistry,
-    token_with_claims: tuple[str, TokenClaimsSchema],
-):
-    token, claims = token_with_claims
+    async def test_get_integration_not_found(
+        self,
+        client: AsyncClient,
+        mock_registry: IntegrationRegistry,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
 
-    response = await client.get(
-        "/integrations/not-a-real-slug/",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+        response = await client.get(
+            "/integrations/not-a-real-slug/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    async def test_get_integration_missing_auth(
+        self,
+        client: AsyncClient,
+        mock_registry: IntegrationRegistry,
+    ):
+        response = await client.get("/integrations/mock/")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED

@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 import httpx
 from pydantic import Field
 
+from ..exceptions import AppException
 from .base_integration import (
     BaseConnectionModel,
     BaseIntegration,
@@ -33,16 +34,21 @@ class OAuth2Integration(BaseIntegration):
         access_token: str,
         refresh_token: str,
     ):
-        self.validate_class_attrs()
+        if not self.validate_class_attrs():
+            raise AppException.IntegrationInvalid
         self.access_token = access_token
         self.refresh_token = refresh_token
 
     @classmethod
-    def validate_class_attrs(cls: type["OAuth2Integration"]) -> None:
+    def validate_class_attrs(cls: type["OAuth2Integration"]) -> bool:
         super().validate_class_attrs()
-        assert cls.oauth2_api_root != ""
-        assert cls.oauth2_authorization_endpoint != ""
-        assert cls.oauth2_token_endpoint != ""
+        if cls.oauth2_api_root == "":
+            return False
+        if cls.oauth2_authorization_endpoint == "":
+            return False
+        if cls.oauth2_token_endpoint == "":
+            return False
+        return True
 
     @classmethod
     def config_model(

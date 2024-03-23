@@ -1,48 +1,46 @@
-from typing import ClassVar
-
 from ..exceptions import AppException
 from .base_integration import BaseIntegration
 from .notion import Notion
 
 
 class IntegrationRegistry:
-    integrations: ClassVar[dict[str, type[BaseIntegration]]] = {}
+    def __init__(self) -> None:
+        self.integrations: dict[str, type[BaseIntegration]] = {}
 
-    @classmethod
     def add(
-        cls: type["IntegrationRegistry"],
+        self: "IntegrationRegistry",
         integration: type[BaseIntegration],
     ) -> None:
-        if integration.slug in cls.integrations:
+        if integration.slug in self.integrations:
             raise AppException.IntegrationAlreadyExists
         if not integration.validate_class_attrs():
             raise AppException.IntegrationInvalid
-        cls.integrations[integration.slug] = integration
+        self.integrations[integration.slug] = integration
 
-    @classmethod
     def upsert(
-        cls: type["IntegrationRegistry"],
+        self: "IntegrationRegistry",
         integration: type[BaseIntegration],
     ) -> None:
         integration.validate_class_attrs()
-        cls.integrations[integration.slug] = integration
+        self.integrations[integration.slug] = integration
 
-    @classmethod
-    def get(cls: type["IntegrationRegistry"], slug: str) -> type[BaseIntegration]:
-        integration_class = cls.integrations.get(slug)
+    def get(self: "IntegrationRegistry", slug: str) -> type[BaseIntegration]:
+        integration_class = self.integrations.get(slug)
         if not integration_class:
             raise AppException.IntegrationNotFound
         return integration_class
 
-    @classmethod
-    def get_all(cls: type["IntegrationRegistry"]) -> list[type[BaseIntegration]]:
-        return list(cls.integrations.values())
+    def get_all(self: "IntegrationRegistry") -> list[type[BaseIntegration]]:
+        return list(self.integrations.values())
 
-    @classmethod
-    def get_slugs(cls: type["IntegrationRegistry"]) -> list[str]:
-        return list(cls.integrations.keys())
+    def get_slugs(self: "IntegrationRegistry") -> list[str]:
+        return list(self.integrations.keys())
+
+    def clear(self: "IntegrationRegistry") -> None:
+        self.integrations.clear()
 
 
-def get_integration_registry() -> type[IntegrationRegistry]:
-    IntegrationRegistry.upsert(Notion)
-    return IntegrationRegistry
+def get_integration_registry() -> IntegrationRegistry:
+    registry = IntegrationRegistry()
+    registry.upsert(Notion)
+    return registry

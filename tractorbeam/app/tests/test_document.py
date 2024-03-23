@@ -9,248 +9,531 @@ from ..schemas.token import TokenClaimsSchema
 
 
 @pytest.mark.asyncio()
-async def test_create_document(
-    client: AsyncClient,
-    token_with_claims: tuple[str, TokenClaimsSchema],
-):
-    token, _ = token_with_claims
+class TestCreateDocument:
+    """POST /api/v1/documents/"""
 
-    resp = await client.post(
-        "/documents/",
-        headers={"Authorization": f"Bearer {token}"},
-        json={"title": "Hello World Document", "content": "hello world\nchunk 2"},
-    )
+    async def test_create_document(
+        self,
+        client: AsyncClient,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, _ = token_with_claims
 
-    assert resp.status_code == status.HTTP_200_OK
-    data = resp.json()
-    assert "id" in data
-    assert "content" in data
-    assert "chunks" in data
+        response = await client.post(
+            "/documents/",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"title": "Hello World Document", "content": "hello world\nchunk 2"},
+        )
 
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "id" in data
+        assert "content" in data
+        assert "chunks" in data
 
-@pytest.mark.asyncio()
-async def test_get_document(
-    client: AsyncClient,
-    session: AsyncSession,
-    token_with_claims: tuple[str, TokenClaimsSchema],
-):
-    token, claims = token_with_claims
+    async def test_create_document_missing_body(
+        self,
+        client: AsyncClient,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, _ = token_with_claims
 
-    # Create a document to fetch later
-    document = Document(
-        title="Test Document for Get",
-        content="This is a test document content.",
-        tenant_id=claims.tenant_id,
-        tenant_user_id=claims.tenant_user_id,
-        chunks=[
-            Chunk(
-                content="This is a test document content.",
-                tenant_id=claims.tenant_id,
-                tenant_user_id=claims.tenant_user_id,
-            ),
-        ],
-    )
-    session.add(document)
-    await session.commit()
-    await session.refresh(document)
+        response = await client.post(
+            "/documents/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
-    # Fetch the document
-    resp = await client.get(
-        f"/documents/{document.id}/",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    assert resp.status_code == status.HTTP_200_OK
-    data = resp.json()
-    assert data["title"] == "Test Document for Get"
-    assert data["content"] == "This is a test document content."
-    assert "chunks" in data
-    assert len(data["chunks"]) == 1
-    assert data["chunks"][0]["content"] == "This is a test document content."
+    async def test_create_document_invalid_body(
+        self,
+        client: AsyncClient,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, _ = token_with_claims
 
+        response = await client.post(
+            "/documents/",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"invalid_field": "Invalid data"},
+        )
 
-@pytest.mark.asyncio()
-async def test_get_document_not_found(
-    client: AsyncClient,
-    token_with_claims: tuple[str, TokenClaimsSchema],
-):
-    token, _ = token_with_claims
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    resp = await client.get(
-        "/documents/999999/",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    async def test_create_document_missing_auth(
+        self,
+        client: AsyncClient,
+    ):
+        response = await client.post(
+            "/documents/",
+            json={
+                "title": "Unauthorized Document",
+                "content": "This should not be created",
+            },
+        )
 
-    assert resp.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.asyncio()
-async def test_get_document_not_owned(
-    client: AsyncClient,
-    session: AsyncSession,
-    token_with_claims: tuple[str, TokenClaimsSchema],
-):
-    token, claims = token_with_claims
+class TestGetDocuments:
+    """GET /api/v1/documents/"""
 
-    # Create a document owned by another user
-    another_user_document = Document(
-        title="Another User's Document",
-        content="This document is owned by another user.",
-        tenant_id=claims.tenant_id,
-        tenant_user_id="another_user_id",  # Assuming a different user ID
-    )
-    session.add(another_user_document)
-    await session.commit()
-    await session.refresh(another_user_document)
+    async def test_get_documents(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
 
-    # Attempt to fetch the document not owned by the token's user
-    resp = await client.get(
-        f"/documents/{another_user_document.id}/",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+        # Create a document
+        document = Document(
+            title="Test Document for Get All",
+            content="This is a test document content for get all.",
+            tenant_id=claims.tenant_id,
+            tenant_user_id=claims.tenant_user_id,
+            chunks=[
+                Chunk(
+                    content="This is a test document content for get all.",
+                    tenant_id=claims.tenant_id,
+                    tenant_user_id=claims.tenant_user_id,
+                ),
+            ],
+        )
+        session.add(document)
+        await session.commit()
+        await session.refresh(document)
 
-    assert resp.status_code == status.HTTP_404_NOT_FOUND
+        # Fetch all documents
+        response = await client.get(
+            "/documents/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert len(data) >= 1  # Ensure at least one document is returned
+        found = False
+        for doc in data:
+            if doc["id"] == document.id:
+                assert doc["title"] == "Test Document for Get All"
+                assert doc["content"] == "This is a test document content for get all."
+                found = True
+                break
+        assert found  # Ensure the created document is in the returned list
+
+    async def test_get_documents_not_found(
+        self,
+        client: AsyncClient,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, _ = token_with_claims
+
+        response = await client.get(
+            "/documents/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert len(data) == 0  # Ensure no documents are returned
+
+    async def test_get_documents_different_tenant(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
+
+        # Create a document with a different tenant_id
+        document = Document(
+            title="Different Tenant Document",
+            content="This document belongs to a different tenant.",
+            tenant_id="different_tenant_id",
+            tenant_user_id=claims.tenant_user_id,
+        )
+        session.add(document)
+        await session.commit()
+
+        # Attempt to fetch documents
+        response = await client.get(
+            "/documents/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert all(
+            doc["tenant_id"] == claims.tenant_id for doc in data
+        )  # Ensure no documents from different tenants are returned
+
+    async def test_get_documents_different_user(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
+
+        # Create a document with a different tenant_user_id
+        document = Document(
+            title="Different User Document",
+            content="This document belongs to a different user.",
+            tenant_id=claims.tenant_id,
+            tenant_user_id="different_user_id",
+        )
+        session.add(document)
+        await session.commit()
+
+        # Attempt to fetch documents
+        response = await client.get(
+            "/documents/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert all(
+            doc["tenant_user_id"] == claims.tenant_user_id for doc in data
+        )  # Ensure no documents from different users are returned
+
+    async def test_get_documents_missing_auth(
+        self,
+        client: AsyncClient,
+    ):
+        # Attempt to fetch documents without authorization
+        response = await client.get("/documents/")
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.asyncio()
-async def test_get_documents(
-    client: AsyncClient,
-    session: AsyncSession,
-    token_with_claims: tuple[str, TokenClaimsSchema],
-):
-    token, claims = token_with_claims
+class TestGetDocument:
+    """GET /api/v1/documents/{document_id}/"""
 
-    # Create a document
-    document = Document(
-        title="Test Document for Get All",
-        content="This is a test document content for get all.",
-        tenant_id=claims.tenant_id,
-        tenant_user_id=claims.tenant_user_id,
-        chunks=[
-            Chunk(
-                content="This is a test document content for get all.",
-                tenant_id=claims.tenant_id,
-                tenant_user_id=claims.tenant_user_id,
-            ),
-        ],
-    )
-    session.add(document)
-    await session.commit()
-    await session.refresh(document)
+    async def test_get_document(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
 
-    # Fetch all documents
-    resp = await client.get(
-        "/documents/",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+        # Create a document to fetch later
+        document = Document(
+            title="Test Document for Get",
+            content="This is a test document content.",
+            tenant_id=claims.tenant_id,
+            tenant_user_id=claims.tenant_user_id,
+            chunks=[
+                Chunk(
+                    content="This is a test document content.",
+                    tenant_id=claims.tenant_id,
+                    tenant_user_id=claims.tenant_user_id,
+                ),
+            ],
+        )
+        session.add(document)
+        await session.commit()
+        await session.refresh(document)
 
-    assert resp.status_code == status.HTTP_200_OK
-    data = resp.json()
-    assert len(data) >= 1  # Ensure at least one document is returned
-    found = False
-    for doc in data:
-        if doc["id"] == document.id:
-            assert doc["title"] == "Test Document for Get All"
-            assert doc["content"] == "This is a test document content for get all."
-            found = True
-            break
-    assert found  # Ensure the created document is in the returned list
+        # Fetch the document
+        response = await client.get(
+            f"/documents/{document.id}/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["title"] == "Test Document for Get"
+        assert data["content"] == "This is a test document content."
+        assert "chunks" in data
+        assert len(data["chunks"]) == 1
+        assert data["chunks"][0]["content"] == "This is a test document content."
+
+    async def test_get_document_not_found(
+        self,
+        client: AsyncClient,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, _ = token_with_claims
+
+        response = await client.get(
+            "/documents/999999/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    async def test_get_document_different_tenant(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
+
+        # Create a document owned by another tenant
+        another_tenant_document = Document(
+            title="Another Tenant's Document",
+            content="This document is owned by another tenant.",
+            tenant_id="another_tenant_id",  # Assuming a different tenant ID
+            tenant_user_id=claims.tenant_user_id,
+        )
+        session.add(another_tenant_document)
+        await session.commit()
+        await session.refresh(another_tenant_document)
+
+        # Attempt to fetch the document not owned by the token's tenant
+        response = await client.get(
+            f"/documents/{another_tenant_document.id}/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    async def test_get_document_different_user(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
+
+        # Create a document owned by another user within the same tenant
+        another_user_document = Document(
+            title="Another User's Document",
+            content="This document is owned by another user within the same tenant.",
+            tenant_id=claims.tenant_id,
+            tenant_user_id="another_user_id",  # Assuming a different user ID
+        )
+        session.add(another_user_document)
+        await session.commit()
+        await session.refresh(another_user_document)
+
+        # Attempt to fetch the document not owned by the token's user but within the same tenant
+        response = await client.get(
+            f"/documents/{another_user_document.id}/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    async def test_get_document_missing_auth(
+        self,
+        client: AsyncClient,
+    ):
+        # Attempt to fetch a document without authorization
+        response = await client.get("/documents/1/")
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.asyncio()
-async def test_get_documents_not_found(
-    client: AsyncClient,
-    token_with_claims: tuple[str, TokenClaimsSchema],
-):
-    token, _ = token_with_claims
+class TestDeleteDocument:
+    """DELETE /api/v1/documents/{document_id}/"""
 
-    resp = await client.get(
-        "/documents/",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    async def test_delete_document(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
 
-    assert resp.status_code == status.HTTP_200_OK
-    data = resp.json()
-    assert len(data) == 0  # Ensure no documents are returned
+        document = Document(
+            title="Hello World Document",
+            content="hello world\nchunk 2",
+            tenant_id=claims.tenant_id,
+            tenant_user_id=claims.tenant_user_id,
+            chunks=[
+                Chunk(
+                    content="hello world",
+                    tenant_id=claims.tenant_id,
+                    tenant_user_id=claims.tenant_user_id,
+                ),
+                Chunk(
+                    content="chunk 2",
+                    tenant_id=claims.tenant_id,
+                    tenant_user_id=claims.tenant_user_id,
+                ),
+            ],
+        )
+        session.add(document)
+        await session.commit()
+        await session.refresh(document)
+
+        response = await client.delete(
+            f"/documents/{document.id}/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        stmt = select(Document).where(Document.id == document.id)
+        result = await session.execute(stmt)
+        assert result.scalar() is None
+
+    async def test_delete_document_different_tenant(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
+
+        # Create a document owned by another tenant
+        another_tenant_document = Document(
+            title="Another Tenant's Document",
+            content="This document is owned by another tenant.",
+            tenant_id="another_tenant_id",  # Assuming a different tenant ID
+            tenant_user_id=claims.tenant_user_id,
+        )
+        session.add(another_tenant_document)
+        await session.commit()
+        await session.refresh(another_tenant_document)
+
+        # Attempt to delete the document not owned by the token's tenant
+        response = await client.delete(
+            f"/documents/{another_tenant_document.id}/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    async def test_delete_document_different_user(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
+
+        # Create a document owned by another user within the same tenant
+        another_user_document = Document(
+            title="Another User's Document",
+            content="This document is owned by another user within the same tenant.",
+            tenant_id=claims.tenant_id,
+            tenant_user_id="another_user_id",  # Assuming a different user ID
+        )
+        session.add(another_user_document)
+        await session.commit()
+        await session.refresh(another_user_document)
+
+        # Attempt to delete the document not owned by the token's user but within the same tenant
+        response = await client.delete(
+            f"/documents/{another_user_document.id}/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    async def test_delete_document_missing_auth(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+    ):
+        # Create a document to attempt to delete without authorization
+        document = Document(
+            title="Unauthorized Delete Attempt",
+            content="This document should not be deletable without proper authorization.",
+            tenant_id="test_tenant_id",
+            tenant_user_id="test_tenant_user_id",
+        )
+        session.add(document)
+        await session.commit()
+        await session.refresh(document)
+
+        # Attempt to delete the document without providing an authorization token
+        response = await client.delete(
+            f"/documents/{document.id}/",
+        )
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.asyncio()
-async def test_delete_document(
-    client: AsyncClient,
-    session: AsyncSession,
-    token_with_claims: tuple[str, TokenClaimsSchema],
-):
-    token, claims = token_with_claims
+class TestQueryDocuments:
+    """POST /api/v1/documents/query/"""
 
-    document = Document(
-        title="Hello World Document",
-        content="hello world\nchunk 2",
-        tenant_id=claims.tenant_id,
-        tenant_user_id=claims.tenant_user_id,
-        chunks=[
-            Chunk(
-                content="hello world",
-                tenant_id=claims.tenant_id,
-                tenant_user_id=claims.tenant_user_id,
-            ),
-            Chunk(
-                content="chunk 2",
-                tenant_id=claims.tenant_id,
-                tenant_user_id=claims.tenant_user_id,
-            ),
-        ],
-    )
-    session.add(document)
-    await session.commit()
-    await session.refresh(document)
+    async def test_query_documents(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
 
-    resp = await client.delete(
-        f"/documents/{document.id}/",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+        document = Document(
+            title="Hello World Document",
+            content="hello world\nchunk 2",
+            tenant_id=claims.tenant_id,
+            tenant_user_id=claims.tenant_user_id,
+            chunks=[
+                Chunk(
+                    content="hello world",
+                    tenant_id=claims.tenant_id,
+                    tenant_user_id=claims.tenant_user_id,
+                ),
+                Chunk(
+                    content="chunk 2",
+                    tenant_id=claims.tenant_id,
+                    tenant_user_id=claims.tenant_user_id,
+                ),
+            ],
+        )
+        session.add(document)
+        await session.commit()
 
-    assert resp.status_code == status.HTTP_200_OK
+        response = await client.post(
+            "/documents/query/",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"q": "hello world"},
+        )
 
-    stmt = select(Document).where(Document.id == document.id)
-    result = await session.execute(stmt)
-    assert result.scalar() is None
+        assert response.status_code == status.HTTP_200_OK
+        chunks = response.json()
+        assert len(chunks) == 1
 
+    async def test_query_documents_missing_auth(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+    ):
+        response = await client.post(
+            "/documents/query/",
+            json={"q": "hello world"},
+        )
 
-@pytest.mark.asyncio()
-async def test_query_documents(
-    client: AsyncClient,
-    session: AsyncSession,
-    token_with_claims: tuple[str, TokenClaimsSchema],
-):
-    token, claims = token_with_claims
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    document = Document(
-        title="Hello World Document",
-        content="hello world\nchunk 2",
-        tenant_id=claims.tenant_id,
-        tenant_user_id=claims.tenant_user_id,
-        chunks=[
-            Chunk(
-                content="hello world",
-                tenant_id=claims.tenant_id,
-                tenant_user_id=claims.tenant_user_id,
-            ),
-            Chunk(
-                content="chunk 2",
-                tenant_id=claims.tenant_id,
-                tenant_user_id=claims.tenant_user_id,
-            ),
-        ],
-    )
-    session.add(document)
-    await session.commit()
+    async def test_query_documents_missing_body(
+        self,
+        client: AsyncClient,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, _ = token_with_claims
 
-    resp = await client.post(
-        "/documents/query/",
-        headers={"Authorization": f"Bearer {token}"},
-        json={"q": "hello world"},
-    )
+        response = await client.post(
+            "/documents/query/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
 
-    assert resp.status_code == status.HTTP_200_OK
-    chunks = resp.json()
-    assert len(chunks) == 1
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    async def test_query_documents_invalid_body(
+        self,
+        client: AsyncClient,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, _ = token_with_claims
+
+        response = await client.post(
+            "/documents/query/",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"invalid_field": "Invalid data"},
+        )
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

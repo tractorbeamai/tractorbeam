@@ -1,3 +1,4 @@
+import socket
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -21,6 +22,8 @@ async def health_check_db(db: Annotated[AsyncSession, Depends(get_db)]):
     try:
         await db.execute(text("SELECT 1"))
     except DBAPIError as e:
+        raise AppException.DatabaseConnectionFailed from e
+    except socket.gaierror as e:
         raise AppException.DatabaseConnectionFailed from e
     else:
         return "OK"
