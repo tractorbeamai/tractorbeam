@@ -12,7 +12,7 @@ class TestCreateToken:
         }
 
         resp = await client.post(
-            "/token/",
+            "/api/v1/token/",
             headers={"X-API-Key": api_key},
             json=claims,
         )
@@ -23,7 +23,7 @@ class TestCreateToken:
 
     async def test_create_token_invalid_api_key(self, client: AsyncClient):
         resp = await client.post(
-            "/token/",
+            "/api/v1/token/",
             headers={"X-API-Key": "invalid-key"},
             json={"tenant_id": "abc-123", "tenant_user_id": "def-456"},
         )
@@ -39,7 +39,7 @@ class TestCreateToken:
         }
 
         resp = await client.post(
-            "/token/",
+            "/api/v1/token/",
             json=claims,
         )
         assert resp.status_code in (
@@ -53,7 +53,7 @@ class TestCreateToken:
         }
 
         resp = await client.post(
-            "/token/",
+            "/api/v1/token/",
             headers={"X-API-Key": api_key},
             json=claims,
         )
@@ -69,7 +69,7 @@ class TestUseToken:
         }
 
         resp = await client.post(
-            "/token/",
+            "/api/v1/token/",
             headers={"X-API-Key": api_key},
             json=claims,
         )
@@ -79,7 +79,7 @@ class TestUseToken:
         token = data["token"]
 
         resp = await client.get(
-            "/documents/",
+            "/api/v1/documents/",
             headers={"Authorization": f"Bearer {token}"},
             params={"q": "hello world"},
         )
@@ -87,7 +87,7 @@ class TestUseToken:
 
     async def test_use_missing_token(self, client: AsyncClient):
         resp = await client.get(
-            "/documents/",
+            "/api/v1/documents/",
             params={"q": "hello world"},
         )
         assert resp.status_code in (
@@ -99,7 +99,7 @@ class TestUseToken:
         token = "not-a-real-token"
 
         resp = await client.get(
-            "/documents/",
+            "/api/v1/documents/",
             headers={"Authorization": f"Bearer {token}"},
             params={"q": "hello world"},
         )

@@ -20,7 +20,7 @@ class TestCreateDocument:
         token, _ = token_with_claims
 
         response = await client.post(
-            "/documents/",
+            "/api/v1/documents/",
             headers={"Authorization": f"Bearer {token}"},
             json={"title": "Hello World Document", "content": "hello world\nchunk 2"},
         )
@@ -39,7 +39,7 @@ class TestCreateDocument:
         token, _ = token_with_claims
 
         response = await client.post(
-            "/documents/",
+            "/api/v1/documents/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -53,7 +53,7 @@ class TestCreateDocument:
         token, _ = token_with_claims
 
         response = await client.post(
-            "/documents/",
+            "/api/v1/documents/",
             headers={"Authorization": f"Bearer {token}"},
             json={"invalid_field": "Invalid data"},
         )
@@ -65,7 +65,7 @@ class TestCreateDocument:
         client: AsyncClient,
     ):
         response = await client.post(
-            "/documents/",
+            "/api/v1/documents/",
             json={
                 "title": "Unauthorized Document",
                 "content": "This should not be created",
@@ -107,7 +107,7 @@ class TestGetDocuments:
 
         # Fetch all documents
         response = await client.get(
-            "/documents/",
+            "/api/v1/documents/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -131,7 +131,7 @@ class TestGetDocuments:
         token, _ = token_with_claims
 
         response = await client.get(
-            "/documents/",
+            "/api/v1/documents/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -159,7 +159,7 @@ class TestGetDocuments:
 
         # Attempt to fetch documents
         response = await client.get(
-            "/documents/",
+            "/api/v1/documents/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -189,7 +189,7 @@ class TestGetDocuments:
 
         # Attempt to fetch documents
         response = await client.get(
-            "/documents/",
+            "/api/v1/documents/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -204,7 +204,7 @@ class TestGetDocuments:
         client: AsyncClient,
     ):
         # Attempt to fetch documents without authorization
-        response = await client.get("/documents/")
+        response = await client.get("/api/v1/documents/")
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -241,7 +241,7 @@ class TestGetDocument:
 
         # Fetch the document
         response = await client.get(
-            f"/documents/{document.id}/",
+            f"/api/v1/documents/{document.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -261,7 +261,7 @@ class TestGetDocument:
         token, _ = token_with_claims
 
         response = await client.get(
-            "/documents/999999/",
+            "/api/v1/documents/999999/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -288,7 +288,7 @@ class TestGetDocument:
 
         # Attempt to fetch the document not owned by the token's tenant
         response = await client.get(
-            f"/documents/{another_tenant_document.id}/",
+            f"/api/v1/documents/{another_tenant_document.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -315,7 +315,7 @@ class TestGetDocument:
 
         # Attempt to fetch the document not owned by the token's user but within the same tenant
         response = await client.get(
-            f"/documents/{another_user_document.id}/",
+            f"/api/v1/documents/{another_user_document.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -326,7 +326,7 @@ class TestGetDocument:
         client: AsyncClient,
     ):
         # Attempt to fetch a document without authorization
-        response = await client.get("/documents/1/")
+        response = await client.get("/api/v1/documents/1/")
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -366,7 +366,7 @@ class TestDeleteDocument:
         await session.refresh(document)
 
         response = await client.delete(
-            f"/documents/{document.id}/",
+            f"/api/v1/documents/{document.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -397,7 +397,7 @@ class TestDeleteDocument:
 
         # Attempt to delete the document not owned by the token's tenant
         response = await client.delete(
-            f"/documents/{another_tenant_document.id}/",
+            f"/api/v1/documents/{another_tenant_document.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -424,7 +424,7 @@ class TestDeleteDocument:
 
         # Attempt to delete the document not owned by the token's user but within the same tenant
         response = await client.delete(
-            f"/documents/{another_user_document.id}/",
+            f"/api/v1/documents/{another_user_document.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -448,7 +448,7 @@ class TestDeleteDocument:
 
         # Attempt to delete the document without providing an authorization token
         response = await client.delete(
-            f"/documents/{document.id}/",
+            f"/api/v1/documents/{document.id}/",
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -488,7 +488,7 @@ class TestQueryDocuments:
         await session.commit()
 
         response = await client.post(
-            "/documents/query/",
+            "/api/v1/documents/query/",
             headers={"Authorization": f"Bearer {token}"},
             json={"q": "hello world"},
         )
@@ -503,7 +503,7 @@ class TestQueryDocuments:
         session: AsyncSession,
     ):
         response = await client.post(
-            "/documents/query/",
+            "/api/v1/documents/query/",
             json={"q": "hello world"},
         )
 
@@ -517,7 +517,7 @@ class TestQueryDocuments:
         token, _ = token_with_claims
 
         response = await client.post(
-            "/documents/query/",
+            "/api/v1/documents/query/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -531,7 +531,7 @@ class TestQueryDocuments:
         token, _ = token_with_claims
 
         response = await client.post(
-            "/documents/query/",
+            "/api/v1/documents/query/",
             headers={"Authorization": f"Bearer {token}"},
             json={"invalid_field": "Invalid data"},
         )

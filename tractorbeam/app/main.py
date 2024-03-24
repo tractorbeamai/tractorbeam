@@ -1,10 +1,10 @@
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.responses import JSONResponse
 
 from .exceptions import AppExceptionCase
 from .routers import chunk, document, health, integration, token
 
-app = FastAPI(root_path="/api/v1")
+app = FastAPI(root_path="")
 
 
 @app.exception_handler(AppExceptionCase)
@@ -18,8 +18,12 @@ async def custom_app_exception_handler(_request, exception):
     )
 
 
-app.include_router(health.router)
-app.include_router(token.router)
-app.include_router(document.router)
-app.include_router(chunk.router)
-app.include_router(integration.router)
+api = APIRouter(prefix="/api/v1")
+
+api.include_router(health.router)
+api.include_router(token.router)
+api.include_router(document.router)
+api.include_router(chunk.router)
+api.include_router(integration.router)
+
+app.include_router(api)

@@ -21,7 +21,7 @@ class TestCreateChunk:
         token, claims = token_with_claims
 
         response = await client.post(
-            "/chunks/",
+            "/api/v1/chunks/",
             headers={"Authorization": f"Bearer {token}"},
             json={"content": "This is a test chunk"},
         )
@@ -45,7 +45,7 @@ class TestCreateChunk:
         token, claims = token_with_claims
 
         response = await client.post(
-            "/chunks/",
+            "/api/v1/chunks/",
             headers={"Authorization": f"Bearer {token}"},
             json={"invalid_key": "This is a test chunk"},
         )
@@ -59,7 +59,7 @@ class TestCreateChunk:
         token, claims = token_with_claims
 
         response = await client.post(
-            "/chunks/",
+            "/api/v1/chunks/",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -69,7 +69,7 @@ class TestCreateChunk:
         client: AsyncClient,
     ):
         response = await client.post(
-            "/chunks/",
+            "/api/v1/chunks/",
             json={"content": "This chunk should not be created"},
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -102,7 +102,7 @@ class TestGetChunks:
         await session.commit()
 
         response = await client.get(
-            "/chunks/",
+            "/api/v1/chunks/",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_200_OK
@@ -119,7 +119,7 @@ class TestGetChunks:
         token, claims = token_with_claims
 
         response = await client.get(
-            "/chunks/",
+            "/api/v1/chunks/",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_200_OK
@@ -150,7 +150,7 @@ class TestGetChunks:
         await session.commit()
 
         response = await client.get(
-            "/chunks/",
+            "/api/v1/chunks/",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_200_OK
@@ -182,7 +182,7 @@ class TestGetChunks:
         await session.commit()
 
         response = await client.get(
-            "/chunks/",
+            "/api/v1/chunks/",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_200_OK
@@ -195,7 +195,7 @@ class TestGetChunks:
         client: AsyncClient,
     ):
         # Attempt to fetch chunks without authorization
-        response = await client.get("/chunks/")
+        response = await client.get("/api/v1/chunks/")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -221,7 +221,7 @@ class TestGetChunk:
         await session.refresh(chunk)
 
         response = await client.get(
-            f"/chunks/{chunk.id}/",
+            f"/api/v1/chunks/{chunk.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_200_OK
@@ -237,7 +237,7 @@ class TestGetChunk:
         token, claims = token_with_claims
 
         response = await client.get(
-            "/chunks/1/",
+            "/api/v1/chunks/1/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -263,7 +263,7 @@ class TestGetChunk:
 
         # Attempt to fetch the chunk from a different tenant
         response = await client.get(
-            f"/chunks/{different_tenant_chunk.id}/",
+            f"/api/v1/chunks/{different_tenant_chunk.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -289,7 +289,7 @@ class TestGetChunk:
 
         # Attempt to fetch the chunk not owned by the token's user
         response = await client.get(
-            f"/chunks/{another_user_chunk.id}/",
+            f"/api/v1/chunks/{another_user_chunk.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -301,7 +301,7 @@ class TestGetChunk:
         session: AsyncSession,
     ):
         # Attempt to fetch a chunk without authorization
-        response = await client.get("/chunks/1/")
+        response = await client.get("/api/v1/chunks/1/")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -329,7 +329,7 @@ class TestDeleteChunk:
 
         # Delete the chunk
         response = await client.delete(
-            f"/chunks/{chunk.id}/",
+            f"/api/v1/chunks/{chunk.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -350,7 +350,7 @@ class TestDeleteChunk:
 
         # Attempt to delete a chunk that does not exist
         response = await client.delete(
-            "/chunks/999999/",  # Assuming 999999 is an ID that does not exist
+            "/api/v1/chunks/999999/",  # Assuming 999999 is an ID that does not exist
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -377,7 +377,7 @@ class TestDeleteChunk:
 
         # Attempt to delete the chunk
         response = await client.delete(
-            f"/chunks/{chunk.id}/",
+            f"/api/v1/chunks/{chunk.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -405,7 +405,7 @@ class TestDeleteChunk:
 
         # Attempt to delete the chunk
         response = await client.delete(
-            f"/chunks/{chunk.id}/",
+            f"/api/v1/chunks/{chunk.id}/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -418,7 +418,7 @@ class TestDeleteChunk:
         session: AsyncSession,
     ):
         # Attempt to delete a chunk without providing an authorization token
-        response = await client.delete("/chunks/1/")
+        response = await client.delete("/api/v1/chunks/1/")
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -452,7 +452,7 @@ class TestQueryChunks:
 
         # Query chunks
         response = await client.post(
-            "/chunks/query/",
+            "/api/v1/chunks/query/",
             headers={"Authorization": f"Bearer {token}"},
             json={"q": "query test"},
         )
@@ -482,7 +482,7 @@ class TestQueryChunks:
 
         # Query chunks with the original tenant's token
         response = await client.post(
-            "/chunks/query/",
+            "/api/v1/chunks/query/",
             headers={"Authorization": f"Bearer {token}"},
             json={"q": "tenant"},
         )
@@ -511,7 +511,7 @@ class TestQueryChunks:
 
         # Query chunks with the original user's token
         response = await client.post(
-            "/chunks/query/",
+            "/api/v1/chunks/query/",
             headers={"Authorization": f"Bearer {token}"},
             json={"q": "user"},
         )
@@ -526,7 +526,7 @@ class TestQueryChunks:
         client: AsyncClient,
     ):
         # Attempt to query chunks without providing an authorization token
-        response = await client.post("/chunks/query/", json={"q": "query test"})
+        response = await client.post("/api/v1/chunks/query/", json={"q": "query test"})
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -539,7 +539,7 @@ class TestQueryChunks:
 
         # Attempt to query chunks without providing a body
         response = await client.post(
-            "/chunks/query/",
+            "/api/v1/chunks/query/",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -554,7 +554,7 @@ class TestQueryChunks:
 
         # Attempt to query chunks with an invalid body
         response = await client.post(
-            "/chunks/query/",
+            "/api/v1/chunks/query/",
             headers={"Authorization": f"Bearer {token}"},
             json={"invalid_field": "Invalid data"},
         )

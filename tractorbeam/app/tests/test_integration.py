@@ -41,7 +41,7 @@ class TestGetIntegrations:
     ):
         token, claims = token_with_claims
         response = await client.get(
-            "/integrations/",
+            "/api/v1/integrations/",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_200_OK
@@ -56,7 +56,7 @@ class TestGetIntegrations:
     ):
         token, claims = token_with_claims
         response = await client.get(
-            "/integrations/",
+            "/api/v1/integrations/",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_200_OK
@@ -68,7 +68,7 @@ class TestGetIntegrations:
         client: AsyncClient,
         mock_registry: IntegrationRegistry,
     ):
-        response = await client.get("/integrations/")
+        response = await client.get("/api/v1/integrations/")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -85,7 +85,7 @@ class TestGetIntegration:
         token, claims = token_with_claims
 
         response = await client.get(
-            "/integrations/mock/",
+            "/api/v1/integrations/mock/",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_200_OK
@@ -102,7 +102,7 @@ class TestGetIntegration:
         token, claims = token_with_claims
 
         response = await client.get(
-            "/integrations/not-a-real-slug/",
+            "/api/v1/integrations/not-a-real-slug/",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -112,5 +112,5 @@ class TestGetIntegration:
         client: AsyncClient,
         mock_registry: IntegrationRegistry,
     ):
-        response = await client.get("/integrations/mock/")
+        response = await client.get("/api/v1/integrations/mock/")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED

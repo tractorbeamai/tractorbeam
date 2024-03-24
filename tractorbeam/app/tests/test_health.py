@@ -10,7 +10,7 @@ from ..main import app
 @pytest.mark.asyncio()
 class TestHealthChecks:
     async def test_health(self, client: AsyncClient):
-        response = await client.get("/health")
+        response = await client.get("/api/v1/health")
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == "OK"
 
@@ -19,7 +19,7 @@ class TestHealthChecks:
         client: AsyncClient,
         session: AsyncSession,
     ):
-        response = await client.get("/health/db")
+        response = await client.get("/api/v1/health/db")
         assert response.status_code == status.HTTP_200_OK
 
     async def test_health_no_db(self, client: AsyncClient):
@@ -39,6 +39,6 @@ class TestHealthChecks:
                 yield session
 
         app.dependency_overrides[get_db] = get_bad_db
-        response = await client.get("/health/db")
+        response = await client.get("/api/v1/health/db")
         assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
         del app.dependency_overrides[get_db]
