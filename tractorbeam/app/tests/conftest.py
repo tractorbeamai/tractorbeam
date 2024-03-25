@@ -10,7 +10,7 @@ from ..database import async_session, engine, get_db
 from ..main import app
 from ..models import Base
 from ..schemas.token import TokenClaimsSchema
-from ..security import get_api_key, get_token_claims
+from ..security import get_token_claims
 from ..services.token import TokenService
 from ..settings import get_settings
 
@@ -64,14 +64,16 @@ async def client(app_with_db_override: FastAPI) -> AsyncGenerator:
 def api_key():
     key = "test-secret-key"
 
-    def mock_get_api_key():
-        return key
+    def mock_get_settings():
+        settings = get_settings()
+        settings.api_keys += [key]
+        return settings
 
-    app.dependency_overrides[get_api_key] = mock_get_api_key
+    app.dependency_overrides[get_settings] = mock_get_settings
 
     yield key
 
-    del app.dependency_overrides[get_api_key]
+    del app.dependency_overrides[get_settings]
 
 
 @pytest.fixture()
