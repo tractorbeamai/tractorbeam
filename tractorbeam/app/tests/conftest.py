@@ -55,7 +55,7 @@ def app_with_db_override(override_get_db: Callable) -> FastAPI:
 async def client(app_with_db_override: FastAPI) -> AsyncGenerator:
     async with AsyncClient(
         transport=ASGITransport(app=app_with_db_override),  # type: ignore[arg-type]
-        base_url="http://test",
+        base_url="http://testhost",
     ) as ac:
         yield ac
 

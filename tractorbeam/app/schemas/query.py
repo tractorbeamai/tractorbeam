@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 
 
-class Query(BaseModel):
+class QuerySchema(BaseModel):
     q: str
 
 
-class QueryResult(BaseModel):
+class QueryResultSchema(BaseModel):
     content: str
     score: float

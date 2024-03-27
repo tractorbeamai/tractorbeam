@@ -1,4 +1,3 @@
-from ..base_integration import BaseIntegration
 from ..oauth2_integration import (
     OAuth2ConnectionModel,
     OAuth2Integration,
@@ -24,16 +23,16 @@ class MockOAuth2Integration(OAuth2Integration):
     oauth2_token_endpoint = "/token"
 
     @classmethod
-    def config_model(cls: BaseIntegration):
+    def config_model(cls: type[OAuth2Integration]):
         return MockOAuth2IntegrationConfig
 
     @classmethod
-    def connection_model(cls: BaseIntegration):
+    def connection_model(cls: type[OAuth2Integration]):
         return MockOAuth2Connection
 
     @classmethod
     def get_access_token(
-        cls: type["OAuth2Integration"],
+        cls: type[OAuth2Integration],
         client_id: str,
         client_secret: str,
         code: str,
@@ -45,5 +44,5 @@ class MockOAuth2Integration(OAuth2Integration):
             "expires_at": "mock-expires-at",
         }
 
-    def get_all_documents(self) -> list[str]:
+    def get_all_documents(self: OAuth2Integration) -> list[str]:
         return ["Document 1", "Document 2", "Document 3"]

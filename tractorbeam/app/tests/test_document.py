@@ -1,11 +1,17 @@
+from typing import Annotated
+
 import pytest
-from fastapi import status
+from fastapi import Depends, status
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..database import get_db
+from ..main import app
 from ..models import Chunk, Document
 from ..schemas.token import TokenClaimsSchema
+from ..security import get_token_claims
+from ..services.document import DocumentCRUD, get_document_crud
 
 
 @pytest.mark.asyncio()
@@ -13,7 +19,7 @@ class TestCreateDocument:
     """POST /api/v1/documents/"""
 
     async def test_create_document(
-        self,
+        self: "TestCreateDocument",
         client: AsyncClient,
         token_with_claims: tuple[str, TokenClaimsSchema],
     ):
@@ -31,8 +37,78 @@ class TestCreateDocument:
         assert "content" in data
         assert "chunks" in data
 
+    @pytest.fixture()
+    def _override_get_document_crud_broken_create(self: "TestCreateDocument"):
+        class BrokenCreateDocumentCRUD(DocumentCRUD):
+            async def create(self, *_args, **_kwargs):
+                return None
+
+        def get_broken_create_document_crud(
+            db: Annotated[AsyncSession, Depends(get_db)],
+            claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
+        ):
+            return BrokenCreateDocumentCRUD(db, claims.tenant_id, claims.tenant_user_id)
+
+        app.dependency_overrides[get_document_crud] = get_broken_create_document_crud
+
+        yield
+
+        del app.dependency_overrides[get_document_crud]
+
+    @pytest.mark.usefixtures("_override_get_document_crud_broken_create")
+    async def test_create_document_crud_create_error(
+        self: "TestCreateDocument",
+        client: AsyncClient,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, _ = token_with_claims
+
+        response = await client.post(
+            "/api/v1/documents/",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"title": "Failed Document", "content": "This should not be created"},
+        )
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    @pytest.fixture()
+    def _override_get_document_crud_broken_find_one(
+        self: "TestCreateDocument",
+    ):
+        class BrokenFindDocumentCRUD(DocumentCRUD):
+            async def find_one(self, _item_id: int):
+                return None
+
+        def get_broken_find_document_crud(
+            db: Annotated[AsyncSession, Depends(get_db)],
+            claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
+        ):
+            return BrokenFindDocumentCRUD(db, claims.tenant_id, claims.tenant_user_id)
+
+        app.dependency_overrides[get_document_crud] = get_broken_find_document_crud
+
+        yield
+
+        del app.dependency_overrides[get_document_crud]
+
+    @pytest.mark.usefixtures("_override_get_document_crud_broken_find_one")
+    async def test_create_document_crud_find_error(
+        self: "TestCreateDocument",
+        client: AsyncClient,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, _ = token_with_claims
+
+        response = await client.post(
+            "/api/v1/documents/",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"title": "Failed Document", "content": "This should not be created"},
+        )
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
     async def test_create_document_missing_body(
-        self,
+        self: "TestCreateDocument",
         client: AsyncClient,
         token_with_claims: tuple[str, TokenClaimsSchema],
     ):
@@ -46,7 +122,7 @@ class TestCreateDocument:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     async def test_create_document_invalid_body(
-        self,
+        self: "TestCreateDocument",
         client: AsyncClient,
         token_with_claims: tuple[str, TokenClaimsSchema],
     ):
@@ -61,7 +137,7 @@ class TestCreateDocument:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     async def test_create_document_missing_auth(
-        self,
+        self: "TestCreateDocument",
         client: AsyncClient,
     ):
         response = await client.post(
@@ -80,7 +156,7 @@ class TestGetDocuments:
     """GET /api/v1/documents/"""
 
     async def test_get_documents(
-        self,
+        self: "TestGetDocuments",
         client: AsyncClient,
         session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -124,7 +200,7 @@ class TestGetDocuments:
         assert found  # Ensure the created document is in the returned list
 
     async def test_get_documents_not_found(
-        self,
+        self: "TestGetDocuments",
         client: AsyncClient,
         token_with_claims: tuple[str, TokenClaimsSchema],
     ):
@@ -140,7 +216,7 @@ class TestGetDocuments:
         assert len(data) == 0  # Ensure no documents are returned
 
     async def test_get_documents_different_tenant(
-        self,
+        self: "TestGetDocuments",
         client: AsyncClient,
         session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -170,7 +246,7 @@ class TestGetDocuments:
         )  # Ensure no documents from different tenants are returned
 
     async def test_get_documents_different_user(
-        self,
+        self: "TestGetDocuments",
         client: AsyncClient,
         session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -200,7 +276,7 @@ class TestGetDocuments:
         )  # Ensure no documents from different users are returned
 
     async def test_get_documents_missing_auth(
-        self,
+        self: "TestGetDocuments",
         client: AsyncClient,
     ):
         # Attempt to fetch documents without authorization
@@ -214,7 +290,7 @@ class TestGetDocument:
     """GET /api/v1/documents/{document_id}/"""
 
     async def test_get_document(
-        self,
+        self: "TestGetDocument",
         client: AsyncClient,
         session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -254,7 +330,7 @@ class TestGetDocument:
         assert data["chunks"][0]["content"] == "This is a test document content."
 
     async def test_get_document_not_found(
-        self,
+        self: "TestGetDocument",
         client: AsyncClient,
         token_with_claims: tuple[str, TokenClaimsSchema],
     ):
@@ -268,7 +344,7 @@ class TestGetDocument:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     async def test_get_document_different_tenant(
-        self,
+        self: "TestGetDocument",
         client: AsyncClient,
         session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -295,7 +371,7 @@ class TestGetDocument:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     async def test_get_document_different_user(
-        self,
+        self: "TestGetDocument",
         client: AsyncClient,
         session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -322,7 +398,7 @@ class TestGetDocument:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     async def test_get_document_missing_auth(
-        self,
+        self: "TestGetDocument",
         client: AsyncClient,
     ):
         # Attempt to fetch a document without authorization
@@ -336,7 +412,7 @@ class TestDeleteDocument:
     """DELETE /api/v1/documents/{document_id}/"""
 
     async def test_delete_document(
-        self,
+        self: "TestDeleteDocument",
         client: AsyncClient,
         session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -377,7 +453,7 @@ class TestDeleteDocument:
         assert result.scalar() is None
 
     async def test_delete_document_different_tenant(
-        self,
+        self: "TestDeleteDocument",
         client: AsyncClient,
         session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -404,7 +480,7 @@ class TestDeleteDocument:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     async def test_delete_document_different_user(
-        self,
+        self: "TestDeleteDocument",
         client: AsyncClient,
         session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -431,7 +507,7 @@ class TestDeleteDocument:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     async def test_delete_document_missing_auth(
-        self,
+        self: "TestDeleteDocument",
         client: AsyncClient,
         session: AsyncSession,
     ):
@@ -459,7 +535,7 @@ class TestQueryDocuments:
     """POST /api/v1/documents/query/"""
 
     async def test_query_documents(
-        self,
+        self: "TestQueryDocuments",
         client: AsyncClient,
         session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -498,9 +574,8 @@ class TestQueryDocuments:
         assert len(chunks) == 1
 
     async def test_query_documents_missing_auth(
-        self,
+        self: "TestQueryDocuments",
         client: AsyncClient,
-        session: AsyncSession,
     ):
         response = await client.post(
             "/api/v1/documents/query/",
@@ -510,7 +585,7 @@ class TestQueryDocuments:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     async def test_query_documents_missing_body(
-        self,
+        self: "TestQueryDocuments",
         client: AsyncClient,
         token_with_claims: tuple[str, TokenClaimsSchema],
     ):
@@ -524,7 +599,7 @@ class TestQueryDocuments:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     async def test_query_documents_invalid_body(
-        self,
+        self: "TestQueryDocuments",
         client: AsyncClient,
         token_with_claims: tuple[str, TokenClaimsSchema],
     ):

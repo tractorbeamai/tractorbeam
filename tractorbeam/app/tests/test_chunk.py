@@ -1,11 +1,17 @@
+from typing import Annotated
+
 import pytest
-from fastapi import status
+from fastapi import Depends, status
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..database import get_db
+from ..main import app
 from ..models import Chunk
 from ..schemas.token import TokenClaimsSchema
+from ..security import get_token_claims
+from ..services.chunk import ChunkCRUD, get_chunk_crud
 
 
 @pytest.mark.asyncio()
@@ -36,6 +42,40 @@ class TestCreateChunk:
         assert db_chunk.content == "This is a test chunk"
         assert db_chunk.tenant_id == claims.tenant_id
         assert db_chunk.tenant_user_id == claims.tenant_user_id
+
+    @pytest.fixture()
+    def _override_get_chunk_crud_broken_create(self: "TestCreateChunk"):
+        class BrokenCreateChunkCRUD(ChunkCRUD):
+            async def create(self, _item):
+                return None
+
+        def get_broken_create_chunk_crud(
+            db: Annotated[AsyncSession, Depends(get_db)],
+            claims: Annotated[TokenClaimsSchema, Depends(get_token_claims)],
+        ):
+            return BrokenCreateChunkCRUD(db, claims.tenant_id, claims.tenant_user_id)
+
+        app.dependency_overrides[get_chunk_crud] = get_broken_create_chunk_crud
+
+        yield
+
+        del app.dependency_overrides[get_chunk_crud]
+
+    @pytest.mark.usefixtures("_override_get_chunk_crud_broken_create")
+    async def test_create_chunk_crud_error(
+        self: "TestCreateChunk",
+        client: AsyncClient,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, _ = token_with_claims
+
+        response = await client.post(
+            "/api/v1/chunks/",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"content": "This is a test chunk"},
+        )
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     async def test_create_chunk_invalid_body(
         self: "TestCreateChunk",
@@ -231,10 +271,9 @@ class TestGetChunk:
     async def test_get_chunk_not_found(
         self: "TestGetChunk",
         client: AsyncClient,
-        session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
     ):
-        token, claims = token_with_claims
+        token, _ = token_with_claims
 
         response = await client.get(
             "/api/v1/chunks/1/",
@@ -298,7 +337,6 @@ class TestGetChunk:
     async def test_get_chunk_missing_auth(
         self: "TestGetChunk",
         client: AsyncClient,
-        session: AsyncSession,
     ):
         # Attempt to fetch a chunk without authorization
         response = await client.get("/api/v1/chunks/1/")
@@ -343,7 +381,6 @@ class TestDeleteChunk:
     async def test_delete_chunk_not_found(
         self: "TestDeleteChunk",
         client: AsyncClient,
-        session: AsyncSession,
         token_with_claims: tuple[str, TokenClaimsSchema],
     ):
         token, claims = token_with_claims
@@ -415,7 +452,6 @@ class TestDeleteChunk:
     async def test_delete_chunk_missing_auth(
         self: "TestDeleteChunk",
         client: AsyncClient,
-        session: AsyncSession,
     ):
         # Attempt to delete a chunk without providing an authorization token
         response = await client.delete("/api/v1/chunks/1/")

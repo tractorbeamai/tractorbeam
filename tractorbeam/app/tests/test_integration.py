@@ -34,7 +34,7 @@ def mock_empty_registry():
 @pytest.mark.asyncio()
 class TestGetIntegrations:
     async def test_get_integrations(
-        self,
+        self: "TestGetIntegrations",
         client: AsyncClient,
         mock_registry: IntegrationRegistry,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -49,7 +49,7 @@ class TestGetIntegrations:
         assert len(data) > 0
 
     async def test_get_integrations_empty(
-        self,
+        self: "TestGetIntegrations",
         client: AsyncClient,
         mock_empty_registry: IntegrationRegistry,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -64,7 +64,7 @@ class TestGetIntegrations:
         assert len(data) == 0  # Expecting an empty list since the registry is empty
 
     async def test_get_integrations_missing_auth(
-        self,
+        self: "TestGetIntegrations",
         client: AsyncClient,
         mock_registry: IntegrationRegistry,
     ):
@@ -77,7 +77,7 @@ class TestGetIntegration:
     """GET /api/v1/integrations/{integration_slug}/"""
 
     async def test_get_integration(
-        self,
+        self: "TestGetIntegration",
         client: AsyncClient,
         mock_registry: IntegrationRegistry,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -94,7 +94,7 @@ class TestGetIntegration:
         assert data["name"] == "Mock Integration"
 
     async def test_get_integration_not_found(
-        self,
+        self: "TestGetIntegration",
         client: AsyncClient,
         mock_registry: IntegrationRegistry,
         token_with_claims: tuple[str, TokenClaimsSchema],
@@ -108,7 +108,7 @@ class TestGetIntegration:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     async def test_get_integration_missing_auth(
-        self,
+        self: "TestGetIntegration",
         client: AsyncClient,
         mock_registry: IntegrationRegistry,
     ):

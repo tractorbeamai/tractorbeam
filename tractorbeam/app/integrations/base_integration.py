@@ -30,19 +30,6 @@ class BaseIntegration:
             "BaseIntegration.connection_model() must be implemented by subclasses",
         )
 
-    @classmethod
-    def to_dict(cls: type["BaseIntegration"]) -> dict[str, object]:
-        obj = {
-            "slug": cls.slug,
-            "name": cls.name,
-            "config_model": cls.config_model(),
-        }
-
-        if cls.logo_url:
-            obj["logo_url"] = cls.logo_url
-
-        return obj
-
     def get_all_documents(self) -> list[str]:
         raise NotImplementedError(
             "BaseIntegration.get_all_documents() must be implemented by subclasses",

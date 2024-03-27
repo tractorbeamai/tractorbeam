@@ -3,7 +3,7 @@ import pytest
 from ..exceptions import AppException
 from ..integrations.base_integration import BaseIntegration
 from ..integrations.mock.mock_oauth2 import MockOAuth2Integration
-from ..integrations.registry import IntegrationRegistry
+from ..integrations.registry import IntegrationRegistry, get_integration_registry
 
 
 @pytest.mark.asyncio()
@@ -92,3 +92,11 @@ class TestIntegrationRegistry:
         registry.clear()
 
         assert len(registry.integrations) == 0
+
+
+class TestIntegrationRegistryDependency:
+    async def test_get_integration_registry(self: "TestIntegrationRegistryDependency"):
+        registry = get_integration_registry()
+
+        assert isinstance(registry, IntegrationRegistry)
+        assert len(registry.get_all()) > 0

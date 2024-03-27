@@ -11,7 +11,6 @@ from pydantic_settings import (
     SettingsConfigDict,
     TomlConfigSettingsSource,
 )
-from pydantic_settings.sources import ConfigFileSourceMixin
 
 
 class IntegrationSettings(BaseModel):
@@ -56,11 +55,11 @@ class Settings(BaseSettings):
         )
 
 
-class RemoteTomlConfigSettingsSource(InitSettingsSource, ConfigFileSourceMixin):
+class RemoteTomlConfigSettingsSource(InitSettingsSource):
     def __init__(
         self,
         settings_cls: type[BaseSettings],
-        toml_url: str | None,
+        toml_url: str | None = None,
     ):
         self.toml_url = toml_url or str(settings_cls.model_config.get("toml_url"))
         self.toml_data = self._load(self.toml_url)
