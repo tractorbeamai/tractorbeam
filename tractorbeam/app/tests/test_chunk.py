@@ -147,7 +147,7 @@ class TestGetChunks:
         )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert len(data) == 2  # Expecting two chunks
+        assert len(data) == 2  # noqa: PLR2004
         assert data[0]["content"] == "First test chunk"
         assert data[1]["content"] == "Second test chunk"
 
@@ -495,7 +495,7 @@ class TestQueryChunks:
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert len(data) == 2  # Expecting two chunks
+        assert len(data) == 2  # noqa: PLR2004
         assert data[0]["content"] == "First query test chunk"
         assert data[1]["content"] == "Second query test chunk"
 

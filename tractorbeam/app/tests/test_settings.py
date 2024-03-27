@@ -16,7 +16,7 @@ class TestSettings:
         assert settings is not None
         assert settings.cloud is not None  # example defaultable setting
 
-    def _mock_httpx_get(self: "TestSettings", _url: str):
+    def _mock_httpx_get(self: "TestSettings", _url: str) -> httpx.Response:
         content = """
 fruits=["banana", "apple"]
 breakfast=true
@@ -30,11 +30,10 @@ breakfast=true
     ):
         monkeypatch.setattr("httpx.get", self._mock_httpx_get)
 
-        SettingsSource = RemoteTomlConfigSettingsSource(
+        settings = RemoteTomlConfigSettingsSource(
             settings_cls=Settings,
             toml_url="http://example.com/config.toml",
-        )
-        settings = SettingsSource()
+        )()
         assert settings is not None
         assert settings["fruits"] == ["banana", "apple"]
         assert settings["breakfast"] is True
@@ -45,7 +44,7 @@ breakfast=true
     ):
         monkeypatch.setattr("httpx.get", self._mock_httpx_get)
 
-        class TestSettings(BaseSettings):
+        class FakeSettings(BaseSettings):
             fruits: list[str]
             breakfast: bool
 
@@ -75,6 +74,6 @@ breakfast=true
                     remote_toml_settings,
                 )
 
-        settings = TestSettings()
+        settings = FakeSettings()
         assert settings.fruits == ["banana", "apple"]
         assert settings.breakfast is True
