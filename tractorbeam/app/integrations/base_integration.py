@@ -2,10 +2,20 @@ from pydantic import BaseModel
 
 
 class BaseIntegrationConfigModel(BaseModel):
+    """
+    An 'IntegrationConfigModel' defines the instance-level configuration fields for an integration.
+    For example, the OAuth2IntegrationConfigModel asks for a client_id and client_secret.
+    """
+
     model_config = {"extra": "forbid"}
 
 
 class BaseConnectionModel(BaseModel):
+    """
+    A `ConnectionModel` defines the individual, connection-level fields for an integration.
+    For example, the OAuth2ConnectionModel saves an access_token and refresh_token.
+    """
+
     model_config = {"extra": "forbid"}
 
 
