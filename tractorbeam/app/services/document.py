@@ -8,8 +8,8 @@ from sqlalchemy.orm import selectinload
 from ..database import get_db
 from ..exceptions import AppException
 from ..models import Document
-from ..schemas.chunk import ChunkSchemaCreate
-from ..schemas.document import DocumentSchema, DocumentSchemaCreate
+from ..schemas.chunk import ChunkCreateSchema
+from ..schemas.document import DocumentCreateSchema, DocumentSchema
 from ..schemas.query import QueryResultSchema, QuerySchema
 from ..schemas.token import TokenClaimsSchema
 from ..security import get_token_claims
@@ -22,7 +22,7 @@ class DocumentCRUD:
         self.tenant_id = tenant_id
         self.tenant_user_id = tenant_user_id
 
-    async def create(self, item: DocumentSchemaCreate) -> Document | None:
+    async def create(self, item: DocumentCreateSchema) -> Document | None:
         doc = Document(
             title=item.title,
             content=item.content,
@@ -79,7 +79,7 @@ class DocumentService:
         self.document_crud = document_crud
         self.chunk_crud = chunk_crud
 
-    async def create(self, item: DocumentSchemaCreate) -> DocumentSchema:
+    async def create(self, item: DocumentCreateSchema) -> DocumentSchema:
         # Create a parent document.
         doc = await self.document_crud.create(item)
         if not doc:
@@ -89,7 +89,7 @@ class DocumentService:
         content_chunks = item.content.split("\n")
         for chunk in content_chunks:
             await self.chunk_crud.create(
-                ChunkSchemaCreate(
+                ChunkCreateSchema(
                     content=chunk,
                     document_id=doc.id,
                 ),

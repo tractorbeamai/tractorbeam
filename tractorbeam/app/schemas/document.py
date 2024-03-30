@@ -3,17 +3,17 @@ from pydantic import BaseModel, ConfigDict
 from .chunk import ChunkSchema
 
 
-class DocumentSchemaBase(BaseModel):
+class DocumentBaseSchema(BaseModel):
     title: str | None = None
     content: str
 
 
-class DocumentSchema(DocumentSchemaBase):
+class DocumentSchema(DocumentBaseSchema):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     chunks: list[ChunkSchema]
 
 
-class DocumentSchemaCreate(DocumentSchemaBase):
+class DocumentCreateSchema(DocumentBaseSchema):
     pass

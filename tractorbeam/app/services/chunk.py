@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import get_db
 from ..exceptions import AppException
 from ..models import Chunk
-from ..schemas.chunk import ChunkSchema, ChunkSchemaCreate
+from ..schemas.chunk import ChunkCreateSchema, ChunkSchema
 from ..schemas.query import QueryResultSchema, QuerySchema
 from ..schemas.token import TokenClaimsSchema
 from ..security import get_token_claims
@@ -19,7 +19,7 @@ class ChunkCRUD:
         self.tenant_id = tenant_id
         self.tenant_user_id = tenant_user_id
 
-    async def create(self, item: ChunkSchemaCreate) -> Chunk | None:
+    async def create(self, item: ChunkCreateSchema) -> Chunk | None:
         chunk = Chunk(
             content=item.content,
             document_id=item.document_id,
@@ -63,7 +63,7 @@ class ChunkService:
     def __init__(self, chunk_crud: ChunkCRUD):
         self.chunk_crud = chunk_crud
 
-    async def create(self, item: ChunkSchemaCreate) -> ChunkSchema:
+    async def create(self, item: ChunkCreateSchema) -> ChunkSchema:
         chunk = await self.chunk_crud.create(item)
         if not chunk:
             raise AppException.ChunkCreationFailed

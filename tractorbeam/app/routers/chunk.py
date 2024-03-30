@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from ..schemas.chunk import ChunkSchema, ChunkSchemaCreate
+from ..schemas.chunk import ChunkCreateSchema, ChunkSchema
 from ..schemas.query import QueryResultSchema, QuerySchema
 from ..security import get_token_claims
 from ..services.chunk import ChunkService, get_chunk_service
@@ -16,7 +16,7 @@ router = APIRouter(
 
 @router.post("/")
 async def create_chunk(
-    item: ChunkSchemaCreate,
+    item: ChunkCreateSchema,
     chunk_service: Annotated[ChunkService, Depends(get_chunk_service)],
 ) -> ChunkSchema:
     return await chunk_service.create(item)

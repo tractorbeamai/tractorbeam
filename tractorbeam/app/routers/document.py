@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from ..schemas.document import DocumentSchema, DocumentSchemaCreate
+from ..schemas.document import DocumentCreateSchema, DocumentSchema
 from ..schemas.query import QueryResultSchema, QuerySchema
 from ..security import get_token_claims
 from ..services.document import DocumentService, get_document_service
@@ -16,7 +16,7 @@ router = APIRouter(
 
 @router.post("/")
 async def create_document(
-    item: DocumentSchemaCreate,
+    item: DocumentCreateSchema,
     document_service: Annotated[DocumentService, Depends(get_document_service)],
 ) -> DocumentSchema:
     return await document_service.create(item)
