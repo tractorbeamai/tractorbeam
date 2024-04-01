@@ -6,12 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+defaults:
+  run:
+    working-directory: tractorbeam
+
 jobs:
   ruff-check:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: tractorbeam
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -25,9 +26,6 @@ jobs:
 
   ruff-format:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: tractorbeam
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -41,9 +39,6 @@ jobs:
 
   mypy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: tractorbeam
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
