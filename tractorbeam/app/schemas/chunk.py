@@ -5,12 +5,12 @@ class ChunkBaseSchema(BaseModel):
     content: str
     document_id: int | None = None
 
-
-class ChunkSchema(ChunkBaseSchema):
     model_config = ConfigDict(from_attributes=True)
 
+
+class ChunkSchema(ChunkBaseSchema):
     id: int
 
 
 class ChunkCreateSchema(ChunkBaseSchema):
-    pass
+    model_config = ConfigDict(extra="forbid")

@@ -14,21 +14,16 @@ class MockOAuth2Connection(OAuth2ConnectionModel):
 
 
 class MockOAuth2Integration(OAuth2Integration):
-    name = "Mock Integration"
-    slug = "mock"
+    name = "Mock OAuth2"
+    default_slug = "mock_oauth2"
     logo_url = "https://placekitten.com/g/400/400"
 
     oauth2_api_root = "https://mock-integration.com"
     oauth2_authorization_endpoint = "/authorize"
     oauth2_token_endpoint = "/token"
 
-    @classmethod
-    def config_model(cls: type[OAuth2Integration]):
-        return MockOAuth2IntegrationConfig
-
-    @classmethod
-    def connection_model(cls: type[OAuth2Integration]):
-        return MockOAuth2Connection
+    config_model = MockOAuth2IntegrationConfig
+    connection_model = MockOAuth2Connection
 
     @classmethod
     def get_access_token(

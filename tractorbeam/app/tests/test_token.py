@@ -63,15 +63,31 @@ class TestCreateToken:
             status.HTTP_403_FORBIDDEN,
         )
 
+    @pytest.mark.parametrize(
+        "claims",
+        [
+            ({"not-a-claim": "abc-123"}),
+            ({"tenant_id": ""}),
+            ({"tenant_user_id": ""}),
+            ({}),
+            ({"tenant_id": "abc-123"}),
+            ({"tenant_user_id": "def-456"}),
+        ],
+        ids=[
+            "invalid_claim_key",
+            "missing_tenant_id",
+            "missing_tenant_user_id",
+            "empty_claims",
+            "only_tenant_id",
+            "only_tenant_user_id",
+        ],
+    )
     async def test_create_token_invalid_claims(
         self: "TestCreateToken",
         client: AsyncClient,
         api_key: str,
+        claims: dict,
     ):
-        claims = {
-            "not-a-claim": "abc-123",
-        }
-
         resp = await client.post(
             "/api/v1/token/",
             headers={"X-API-Key": api_key},

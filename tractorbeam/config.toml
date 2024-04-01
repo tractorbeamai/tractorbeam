@@ -1,9 +1,8 @@
-api_keys=["abc"]
+api_keys = [
+    "73446f497c7bc586c83a12728172b707772c3627efca34c435d6df71f84458a5"
+]
 
-[[integrations]]
-enabled=true
-api_key="def"
+[[integrations.notion]]
+client_id = "73446f497c7bc586c83a12728172b707772c3627efca34c435d6df71f84458a5"
+client_secret = "73446f497c7bc586c83a12728172b707772c3627efca34c435d6df71f84458a5"
 
-[[integrations]]
-enabled=true
-api_key="ghi"

@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
+
+from ..exceptions import AppException
 
 
 class BaseIntegrationConfigModel(BaseModel):
@@ -6,6 +8,8 @@ class BaseIntegrationConfigModel(BaseModel):
     An 'IntegrationConfigModel' defines the instance-level configuration fields for an integration.
     For example, the OAuth2IntegrationConfigModel asks for a client_id and client_secret.
     """
+
+    slug: str | None = None
 
     model_config = {"extra": "forbid"}
 
@@ -21,24 +25,32 @@ class BaseConnectionModel(BaseModel):
 
 class BaseIntegration:
     name: str = ""
-    slug: str = ""
+    default_slug: str = ""
     logo_url: str | None = None
 
-    @classmethod
-    def validate_class_attrs(cls: type["BaseIntegration"]) -> bool:
-        return cls.name != "" and cls.slug != ""
+    config_model: type[BaseIntegrationConfigModel] = BaseIntegrationConfigModel
+    connection_model: type[BaseConnectionModel] = BaseConnectionModel
+
+    def __init__(
+        self,
+        connection: BaseConnectionModel,
+    ):
+        if not connection:
+            print("not connection!")
+            raise AppException.IntegrationMisconfigured(
+                "A connection is required to instantiate an Integration.",
+            )
+
+        self.connection = connection
 
     @classmethod
-    def config_model(cls: type["BaseIntegration"]) -> type[BaseIntegrationConfigModel]:
-        raise NotImplementedError(
-            "BaseIntegration.config_model() must be implemented by subclasses",
-        )
-
-    @classmethod
-    def connection_model(cls: type["BaseIntegration"]) -> type[BaseConnectionModel]:
-        raise NotImplementedError(
-            "BaseIntegration.connection_model() must be implemented by subclasses",
-        )
+    def validate_connection(cls: type["BaseIntegration"], config: dict) -> bool:
+        ConnectionModel = cls.connection_model  # noqa: N806
+        try:
+            ConnectionModel(**config)
+        except ValidationError:
+            return False
+        return True
 
     def get_all_documents(self) -> list[str]:
         raise NotImplementedError(

@@ -6,7 +6,6 @@ from urllib.parse import urlencode
 import httpx
 from pydantic import Field
 
-from ..exceptions import AppException
 from .base_integration import (
     BaseConnectionModel,
     BaseIntegration,
@@ -15,8 +14,8 @@ from .base_integration import (
 
 
 class OAuth2IntegrationConfigModel(BaseIntegrationConfigModel):
-    client_id: Annotated[str, Field(description="OAuth2 client ID")]
-    client_secret: Annotated[str, Field(description="OAuth2 client secret")]
+    client_id: Annotated[str, Field(description="OAuth2 Client ID")]
+    client_secret: Annotated[str, Field(description="OAuth2 Client Secret")]
 
 
 class OAuth2ConnectionModel(BaseConnectionModel):
@@ -29,37 +28,8 @@ class OAuth2Integration(BaseIntegration):
     oauth2_authorization_endpoint: str = ""
     oauth2_token_endpoint: str = ""
 
-    def __init__(
-        self,
-        access_token: str,
-        refresh_token: str,
-    ):
-        if not self.validate_class_attrs():
-            raise AppException.IntegrationInvalid
-        self.access_token = access_token
-        self.refresh_token = refresh_token
-
-    @classmethod
-    def validate_class_attrs(cls: type["OAuth2Integration"]) -> bool:
-        super().validate_class_attrs()
-        if cls.oauth2_api_root == "":
-            return False
-        if cls.oauth2_authorization_endpoint == "":
-            return False
-        if cls.oauth2_token_endpoint == "":
-            return False
-        return True
-
-    @classmethod
-    def config_model(
-        cls: type["OAuth2Integration"],
-    ) -> type[OAuth2IntegrationConfigModel]:
-        # TODO refactor to class attr
-        return OAuth2IntegrationConfigModel
-
-    @classmethod
-    def connection_model(cls: type["OAuth2Integration"]) -> type[OAuth2ConnectionModel]:
-        return OAuth2ConnectionModel
+    config_model = OAuth2IntegrationConfigModel
+    connection_model = OAuth2ConnectionModel
 
     @classmethod
     def get_auth_url(

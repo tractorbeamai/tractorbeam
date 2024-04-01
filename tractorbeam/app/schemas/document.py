@@ -16,4 +16,4 @@ class DocumentSchema(DocumentBaseSchema):
 
 
 class DocumentCreateSchema(DocumentBaseSchema):
-    pass
+    model_config = ConfigDict(extra="forbid")

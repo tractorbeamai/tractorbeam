@@ -2,7 +2,7 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
-from ..integrations.mock.mock_oauth2 import MockOAuth2Integration
+from ..integrations.mock_oauth2.mock_oauth2 import MockOAuth2Integration
 from ..integrations.registry import IntegrationRegistry, get_integration_registry
 from ..main import app
 from ..schemas.token import TokenClaimsSchema
@@ -11,7 +11,7 @@ from ..schemas.token import TokenClaimsSchema
 @pytest.fixture()
 def mock_registry():
     registry = IntegrationRegistry()
-    registry.upsert(MockOAuth2Integration)
+    registry.add(MockOAuth2Integration)
 
     app.dependency_overrides[get_integration_registry] = lambda: registry
 
@@ -85,13 +85,13 @@ class TestGetIntegration:
         token, claims = token_with_claims
 
         response = await client.get(
-            "/api/v1/integrations/mock/",
+            "/api/v1/integrations/mock_oauth2/",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert data["slug"] == "mock"
-        assert data["name"] == "Mock Integration"
+        assert data["slug"] == "mock_oauth2"
+        assert data["name"] == "Mock OAuth2"
 
     async def test_get_integration_not_found(
         self: "TestGetIntegration",
@@ -112,5 +112,5 @@ class TestGetIntegration:
         client: AsyncClient,
         mock_registry: IntegrationRegistry,
     ):
-        response = await client.get("/api/v1/integrations/mock/")
+        response = await client.get("/api/v1/integrations/mock_oauth2/")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED

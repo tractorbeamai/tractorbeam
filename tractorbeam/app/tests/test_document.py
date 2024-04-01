@@ -36,6 +36,8 @@ class TestCreateDocument:
         assert "id" in data
         assert "content" in data
         assert "chunks" in data
+        assert "tenant_id" not in data
+        assert "tenant_user_id" not in data
 
     @pytest.fixture()
     def _override_get_document_crud_broken_create(self: "TestCreateDocument"):
@@ -107,31 +109,37 @@ class TestCreateDocument:
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
-    async def test_create_document_missing_body(
-        self: "TestCreateDocument",
-        client: AsyncClient,
-        token_with_claims: tuple[str, TokenClaimsSchema],
-    ):
-        token, _ = token_with_claims
-
-        response = await client.post(
-            "/api/v1/documents/",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-
+    @pytest.mark.parametrize(
+        "invalid_body",
+        [
+            ({"invalid_field": "Invalid data"}),
+            ({"title": 123, "content": True}),
+            ({123: "Non-string key", "content": "Valid content"}),
+            ({"title": "Valid title", "content": 123}),
+            ({}),
+            (None),
+        ],
+        ids=[
+            "invalid_field_present",
+            "invalid_types_for_title_and_content",
+            "non_string_key",
+            "invalid_type_for_content",
+            "empty_body",
+            "none_body",
+        ],
+    )
     async def test_create_document_invalid_body(
         self: "TestCreateDocument",
         client: AsyncClient,
         token_with_claims: tuple[str, TokenClaimsSchema],
+        invalid_body: dict,
     ):
         token, _ = token_with_claims
 
         response = await client.post(
             "/api/v1/documents/",
             headers={"Authorization": f"Bearer {token}"},
-            json={"invalid_field": "Invalid data"},
+            json=invalid_body,
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -195,6 +203,8 @@ class TestGetDocuments:
             if doc["id"] == document.id:
                 assert doc["title"] == "Test Document for Get All"
                 assert doc["content"] == "This is a test document content for get all."
+                assert "tenant_id" not in doc
+                assert "tenant_user_id" not in doc
                 found = True
                 break
         assert found  # Ensure the created document is in the returned list
@@ -223,14 +233,23 @@ class TestGetDocuments:
     ):
         token, claims = token_with_claims
 
-        # Create a document with a different tenant_id
-        document = Document(
+        # Create a correct document
+        correct_document = Document(
+            title="Correct Tenant Document",
+            content="This document belongs to the correct tenant.",
+            tenant_id=claims.tenant_id,
+            tenant_user_id=claims.tenant_user_id,
+        )
+        session.add(correct_document)
+
+        # Create an incorrect document with a different tenant_id
+        incorrect_document = Document(
             title="Different Tenant Document",
             content="This document belongs to a different tenant.",
             tenant_id="different_tenant_id",
             tenant_user_id=claims.tenant_user_id,
         )
-        session.add(document)
+        session.add(incorrect_document)
         await session.commit()
 
         # Attempt to fetch documents
@@ -241,9 +260,8 @@ class TestGetDocuments:
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert all(
-            doc["tenant_id"] == claims.tenant_id for doc in data
-        )  # Ensure no documents from different tenants are returned
+        assert len(data) == 1  # Ensure only the correct document is returned
+        assert data[0]["id"] == correct_document.id
 
     async def test_get_documents_different_user(
         self: "TestGetDocuments",
@@ -253,14 +271,23 @@ class TestGetDocuments:
     ):
         token, claims = token_with_claims
 
-        # Create a document with a different tenant_user_id
-        document = Document(
+        # Create a correct document
+        correct_document = Document(
+            title="Correct User Document",
+            content="This document belongs to the correct user.",
+            tenant_id=claims.tenant_id,
+            tenant_user_id=claims.tenant_user_id,
+        )
+        session.add(correct_document)
+
+        # Create an incorrect document with a different tenant_user_id
+        incorrect_document = Document(
             title="Different User Document",
             content="This document belongs to a different user.",
             tenant_id=claims.tenant_id,
             tenant_user_id="different_user_id",
         )
-        session.add(document)
+        session.add(incorrect_document)
         await session.commit()
 
         # Attempt to fetch documents
@@ -271,9 +298,8 @@ class TestGetDocuments:
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert all(
-            doc["tenant_user_id"] == claims.tenant_user_id for doc in data
-        )  # Ensure no documents from different users are returned
+        assert len(data) == 1  # Ensure only the correct document is returned
+        assert data[0]["id"] == correct_document.id
 
     async def test_get_documents_missing_auth(
         self: "TestGetDocuments",
@@ -328,6 +354,8 @@ class TestGetDocument:
         assert "chunks" in data
         assert len(data["chunks"]) == 1
         assert data["chunks"][0]["content"] == "This is a test document content."
+        assert "tenant_id" not in data
+        assert "tenant_user_id" not in data
 
     async def test_get_document_not_found(
         self: "TestGetDocument",
@@ -452,6 +480,20 @@ class TestDeleteDocument:
         result = await session.execute(stmt)
         assert result.scalar() is None
 
+    async def test_delete_document_not_found(
+        self: "TestDeleteDocument",
+        client: AsyncClient,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, _ = token_with_claims
+
+        response = await client.delete(
+            "/api/v1/documents/999999/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
     async def test_delete_document_different_tenant(
         self: "TestDeleteDocument",
         client: AsyncClient,
@@ -573,6 +615,9 @@ class TestQueryDocuments:
         chunks = response.json()
         assert len(chunks) == 1
 
+        assert all("tenant_id" not in chunk for chunk in chunks)
+        assert all("tenant_user_id" not in chunk for chunk in chunks)
+
     async def test_query_documents_missing_auth(
         self: "TestQueryDocuments",
         client: AsyncClient,
@@ -584,31 +629,123 @@ class TestQueryDocuments:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    async def test_query_documents_missing_body(
-        self: "TestQueryDocuments",
-        client: AsyncClient,
-        token_with_claims: tuple[str, TokenClaimsSchema],
-    ):
-        token, _ = token_with_claims
-
-        response = await client.post(
-            "/api/v1/documents/query/",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-
+    @pytest.mark.parametrize(
+        "invalid_body",
+        [
+            ({"invalid_field": "Invalid data"}),
+            ({"q": 123}),
+            ({"": "empty key"}),
+            ({"q": None}),
+            ({"q": ""}),
+            ({"q": "   "}),
+            ({"q": [], "extra_field": "extra data"}),
+            ({"q": {"nested": "object"}}),
+            ({}),
+            (None),
+        ],
+        ids=[
+            "invalid_field",
+            "non_string_query",
+            "empty_key",
+            "null_query",
+            "empty_string_query",
+            "whitespace_string_query",
+            "extra_field_with_array_query",
+            "nested_object_query",
+            "empty_body",
+            "none_body",
+        ],
+    )
     async def test_query_documents_invalid_body(
         self: "TestQueryDocuments",
         client: AsyncClient,
         token_with_claims: tuple[str, TokenClaimsSchema],
+        invalid_body: dict,
     ):
         token, _ = token_with_claims
 
         response = await client.post(
             "/api/v1/documents/query/",
             headers={"Authorization": f"Bearer {token}"},
-            json={"invalid_field": "Invalid data"},
+            json=invalid_body,
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    async def test_query_documents_different_tenant(
+        self: "TestQueryDocuments",
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
+
+        # Create a document with the correct tenant_id
+        correct_document = Document(
+            title="Correct Tenant Document",
+            content="This document belongs to the correct tenant.",
+            tenant_id=claims.tenant_id,
+            tenant_user_id=claims.tenant_user_id,
+        )
+        session.add(correct_document)
+
+        # Create a document with a different tenant_id
+        different_tenant_document = Document(
+            title="Different Tenant Document",
+            content="This document belongs to a different tenant.",
+            tenant_id="different_tenant_id",
+            tenant_user_id=claims.tenant_user_id,
+        )
+        session.add(different_tenant_document)
+
+        await session.commit()
+
+        # Attempt to fetch documents
+        response = await client.get(
+            "/api/v1/documents/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert len(data) == 1  # Ensure only one document is returned
+        assert data[0]["title"] == "Correct Tenant Document"
+
+    async def test_query_documents_different_user(
+        self: "TestQueryDocuments",
+        client: AsyncClient,
+        session: AsyncSession,
+        token_with_claims: tuple[str, TokenClaimsSchema],
+    ):
+        token, claims = token_with_claims
+
+        # Create a document with the correct tenant_user_id
+        correct_user_document = Document(
+            title="Correct User Document",
+            content="This document belongs to the correct user.",
+            tenant_id=claims.tenant_id,
+            tenant_user_id=claims.tenant_user_id,
+        )
+        session.add(correct_user_document)
+
+        # Create a document with a different tenant_user_id
+        different_user_document = Document(
+            title="Different User Document",
+            content="This document belongs to a different user.",
+            tenant_id=claims.tenant_id,
+            tenant_user_id="different_user_id",
+        )
+        session.add(different_user_document)
+
+        await session.commit()
+
+        # Attempt to fetch documents
+        response = await client.get(
+            "/api/v1/documents/",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert len(data) == 1  # Ensure only the correct user document is returned
+        assert data[0]["title"] == "Correct User Document"

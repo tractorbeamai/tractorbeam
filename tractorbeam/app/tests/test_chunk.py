@@ -31,12 +31,14 @@ class TestCreateChunk:
             headers={"Authorization": f"Bearer {token}"},
             json={"content": "This is a test chunk"},
         )
+
+        # Verify chunk returned in response
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["content"] == "This is a test chunk"
-        # Verify the chunk is created in the database
-        chunk_id = data["id"]
-        stmt = select(Chunk).where(Chunk.id == chunk_id).limit(1)
+
+        # Verify chunk is created in the database
+        stmt = select(Chunk).where(Chunk.id == data["id"]).limit(1)
         db_chunk = await session.scalar(stmt)
         assert db_chunk is not None
         assert db_chunk.content == "This is a test chunk"
@@ -77,30 +79,49 @@ class TestCreateChunk:
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
+    @pytest.mark.parametrize(
+        "invalid_body",
+        [
+            ({"invalid_key": "This is a test chunk"}),
+            ({"content": 123}),
+            ({"content": None}),
+            ({"content": "This is a test chunk", "extra_field": "extra"}),
+            ({"document_id": "not an integer"}),
+            ({"content": "This is a test chunk", "document_id": "not an integer"}),
+            (
+                {
+                    "content": "This is a test chunk",
+                    "document_id": 123,
+                    "extra_field": "extra",
+                }
+            ),
+            ({}),
+            (None),
+        ],
+        ids=[
+            "missing_required_fields",
+            "content_not_string",
+            "content_null",
+            "unexpected_extra_field",
+            "document_id_not_integer",
+            "valid_content_with_invalid_document_id",
+            "valid_fields_with_unexpected_extra_field",
+            "empty_body",
+            "none_body",
+        ],
+    )
     async def test_create_chunk_invalid_body(
         self: "TestCreateChunk",
         client: AsyncClient,
         token_with_claims: tuple[str, TokenClaimsSchema],
+        invalid_body: dict,
     ):
-        token, claims = token_with_claims
+        token, _ = token_with_claims
 
         response = await client.post(
             "/api/v1/chunks/",
             headers={"Authorization": f"Bearer {token}"},
-            json={"invalid_key": "This is a test chunk"},
-        )
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-
-    async def test_create_chunk_missing_body(
-        self: "TestCreateChunk",
-        client: AsyncClient,
-        token_with_claims: tuple[str, TokenClaimsSchema],
-    ):
-        token, claims = token_with_claims
-
-        response = await client.post(
-            "/api/v1/chunks/",
-            headers={"Authorization": f"Bearer {token}"},
+            json=invalid_body,
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -566,25 +587,44 @@ class TestQueryChunks:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    async def test_query_chunks_missing_body(
-        self: "TestQueryChunks",
-        client: AsyncClient,
-        token_with_claims: tuple[str, TokenClaimsSchema],
-    ):
-        token, _ = token_with_claims
-
-        # Attempt to query chunks without providing a body
-        response = await client.post(
-            "/api/v1/chunks/query/",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-
+    @pytest.mark.parametrize(
+        "invalid_body",
+        [
+            ({"q": 12345}),
+            ({"": "empty key"}),
+            ({"q": None}),
+            ({"q": ""}),
+            ({"q": "   "}),
+            ({"q": [], "extra_field": "extra data"}),
+            ({"q": {"nested": "object"}}),
+            ({"q": True}),
+            ({"q": False}),
+            ({"q": "valid", "extra_invalid": "data"}),
+            ({"invalid": "no q field"}),
+            ({}),
+            (None),
+        ],
+        ids=[
+            "non_string_query",
+            "empty_key",
+            "null_query",
+            "empty_string_query",
+            "whitespace_string_query",
+            "extra_field_with_list",
+            "nested_object_query",
+            "boolean_true_query",
+            "boolean_false_query",
+            "extra_invalid_field",
+            "missing_q_field",
+            "empty_object",
+            "none_object",
+        ],
+    )
     async def test_query_chunks_invalid_body(
         self: "TestQueryChunks",
         client: AsyncClient,
         token_with_claims: tuple[str, TokenClaimsSchema],
+        invalid_body: dict,
     ):
         token, _ = token_with_claims
 
@@ -592,7 +632,7 @@ class TestQueryChunks:
         response = await client.post(
             "/api/v1/chunks/query/",
             headers={"Authorization": f"Bearer {token}"},
-            json={"invalid_field": "Invalid data"},
+            json=invalid_body,
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

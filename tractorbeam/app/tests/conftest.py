@@ -1,18 +1,20 @@
 import asyncio
 from collections.abc import AsyncGenerator, Callable, Generator
+from typing import Annotated
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Security
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import async_session, engine, get_db
+from ..exceptions import AppException
 from ..main import app
 from ..models import Base
 from ..schemas.token import TokenClaimsSchema
-from ..security import get_token_claims
+from ..security import api_key_header, get_api_key, get_token_claims
 from ..services.token import TokenService
-from ..settings import get_settings
+from ..settings import Settings, get_settings
 
 DATABASE_URL = get_settings().database_url
 
@@ -64,16 +66,18 @@ async def client(app_with_db_override: FastAPI) -> AsyncGenerator:
 def api_key():
     key = "test-secret-key"
 
-    def mock_get_settings():
-        settings = get_settings()
-        settings.api_keys += [key]
-        return settings
+    def mock_get_api_key(
+        api_key_header: Annotated[str, Security(api_key_header)],
+    ):
+        if api_key_header != key:
+            raise AppException.APIKeyInvalid
+        return api_key_header
 
-    app.dependency_overrides[get_settings] = mock_get_settings
+    app.dependency_overrides[get_api_key] = mock_get_api_key
 
     yield key
 
-    del app.dependency_overrides[get_settings]
+    del app.dependency_overrides[get_api_key]
 
 
 @pytest.fixture()
@@ -92,3 +96,24 @@ async def token_with_claims():
     yield token, claims
 
     del app.dependency_overrides[get_token_claims]
+
+
+@pytest.fixture(autouse=True)
+async def settings():
+    def mock_get_settings():
+        return Settings(
+            integrations={
+                "mock_oauth2": [
+                    {
+                        "client_id": "abc",
+                        "client_secret": "def",
+                    },
+                ],
+            },
+        )
+
+    app.dependency_overrides[get_settings] = mock_get_settings
+
+    yield
+
+    del app.dependency_overrides[get_settings]

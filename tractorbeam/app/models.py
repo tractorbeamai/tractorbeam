@@ -1,4 +1,6 @@
-from sqlalchemy import ForeignKey, MetaData, String
+from enum import Enum
+
+from sqlalchemy import JSON, ForeignKey, MetaData, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -32,7 +34,7 @@ class Document(Base):
     )
 
     def __repr__(self) -> str:
-        return f'Document(id={self.id}, title="{self.title}")'
+        return f'<Document id={self.id} title="{self.title}">'
 
 
 class Chunk(Base):
@@ -51,4 +53,29 @@ class Chunk(Base):
     document: Mapped["Document"] = relationship(back_populates="chunks")
 
     def __repr__(self) -> str:
-        return f'Chunk(id={self.id}, document_id={self.document_id}, content="{self.content}")'
+        return f'<Chunk id={self.id} document_id={self.document_id} content="{self.content}">'
+
+
+class ConnectionStatus(Enum):
+    CONNECTED = "CONNECTED"
+    PENDING = "PENDING"
+    DISCONNECTED = "DISCONNECTED"
+
+
+class Connection(Base):
+    __tablename__ = "connections"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
+    integration: Mapped[str]
+    config: Mapped[dict] = mapped_column(
+        type_=JSON,
+        nullable=False,
+        default=dict,
+    )
+    status: Mapped[ConnectionStatus] = mapped_column(default=ConnectionStatus.PENDING)
+
+    tenant_id: Mapped[str] = mapped_column(index=True)
+    tenant_user_id: Mapped[str] = mapped_column(index=True)
+
+    def __repr__(self) -> str:
+        return f'<Connection id={self.id} integration="{self.integration}" status={self.status} config={self.config}>'

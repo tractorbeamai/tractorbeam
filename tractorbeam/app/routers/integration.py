@@ -19,7 +19,7 @@ async def get_integrations(
 ) -> list[IntegrationSchema]:
     return [
         IntegrationSchema(
-            slug=integration.slug,
+            slug=integration.default_slug,
             name=integration.name,
             logo_url=integration.logo_url,
         )
@@ -34,7 +34,7 @@ async def get_integration(
 ) -> IntegrationSchema:
     integration = registry.get(slug)
     return IntegrationSchema(
-        slug=integration.slug,
+        slug=integration.default_slug,
         name=integration.name,
         logo_url=integration.logo_url,
     )

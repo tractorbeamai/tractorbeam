@@ -3,7 +3,6 @@ from functools import lru_cache
 from typing import Any
 
 import httpx
-from pydantic import BaseModel, ConfigDict
 from pydantic_settings import (
     BaseSettings,
     InitSettingsSource,
@@ -13,19 +12,14 @@ from pydantic_settings import (
 )
 
 
-class IntegrationSettings(BaseModel):
-    enabled: bool
-    api_key: str
-
-    model_config = ConfigDict(extra="ignore")
-
-
 class Settings(BaseSettings):
     database_url: str
     secret: str
     cloud: bool = False
     api_keys: list[str]
-    integrations: list[IntegrationSettings]
+
+    # will be validated in handlers
+    integrations: dict[str, Any]
 
     model_config = SettingsConfigDict(
         toml_file="config.toml",
