@@ -78,6 +78,6 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-asyncio
       - run: |
-          export DATABASE_URL="postgres://postgres:postgres@localhost:5432/tractorbeam_test"
+          export DATABASE_URL="postgresql+asyncpg://postgres:postgres@localhost:5432/tractorbeam_test"
           export SECRET="test-secret-bytes"
           pytest
