@@ -79,7 +79,7 @@ class ChunkService:
         chunks = await self.chunk_crud.find_all()
         return [ChunkSchema.model_validate(chunk) for chunk in chunks]
 
-    async def query(self, query: QuerySchema) -> list[QueryResultSchema]:
+    async def query(self, query: QuerySchema) -> list[QueryResultSchema]:  # noqa: ARG002
         # for now, ignore q and return all documents
         chunks = await self.chunk_crud.find_all()
         return [QueryResultSchema(content=d.content, score=0.5) for d in chunks]
