@@ -64,6 +64,11 @@ class AppException:
             status_code = 500
             AppExceptionCase.__init__(self, status_code, message)
 
+    class IntegrationError(AppExceptionCase):
+        def __init__(self, message: str | None = None):
+            status_code = 500
+            AppExceptionCase.__init__(self, status_code, message)
+
     class ConnectionCreationFailed(AppExceptionCase):
         def __init__(self, message: str | None = None):
             status_code = 500

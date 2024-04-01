@@ -36,7 +36,6 @@ class BaseIntegration:
         connection: BaseConnectionModel,
     ):
         if not connection:
-            print("not connection!")
             raise AppException.IntegrationMisconfigured(
                 "A connection is required to instantiate an Integration.",
             )

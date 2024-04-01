@@ -1,3 +1,4 @@
+# ruff: noqa: ARG003
 from ..oauth2_integration import (
     OAuth2ConnectionModel,
     OAuth2Integration,

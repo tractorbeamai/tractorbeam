@@ -113,7 +113,7 @@ class Notion(OAuth2Integration):
                     page_contents = self.read_page(page_id)
 
                     documents.append(f"=== {page_title} === \n\n{page_contents}")
-                except:
+                except:  # noqa: E722
                     continue
 
         return documents

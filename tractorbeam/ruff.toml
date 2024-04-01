@@ -1,3 +1,11 @@
-lint.select = ["ALL"]
-lint.ignore = ["ANN", "D", "S", "TID", "N818", "E501", "TD", "FIX", "EM101", "TRY003"]
 target-version = "py312"
+extend-exclude = ["migrations"]
+
+[lint]
+select = ["ALL"]
+ignore = ["ANN", "D", "S", "TID", "N818", "E501", "TD", "FIX", "EM101", "TRY003"]
+
+[lint.extend-per-file-ignores]
+"__init__.py" = ["F401"]
+"test_*.py" = ["PLR2004", "ARG002"]
+

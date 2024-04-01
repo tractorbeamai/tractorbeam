@@ -51,7 +51,7 @@ breakfast=true
             model_config = SettingsConfigDict(
                 toml_url="https://example.com/config.toml",
                 extra="ignore",
-            )
+            )  # type: ignore[typeddict-unknown-key]
 
             @classmethod
             def settings_customise_sources(  # noqa: PLR0913
@@ -74,6 +74,6 @@ breakfast=true
                     remote_toml_settings,
                 )
 
-        settings = FakeSettings()
+        settings = FakeSettings()  # type: ignore[call-arg]
         assert settings.fruits == ["banana", "apple"]
         assert settings.breakfast is True

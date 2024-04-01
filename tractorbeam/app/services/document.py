@@ -110,7 +110,7 @@ class DocumentService:
         docs = await self.document_crud.find_all()
         return [DocumentSchema.model_validate(doc) for doc in docs]
 
-    async def query(self, query: QuerySchema) -> list[QueryResultSchema]:  # noqa: ARG002
+    async def query(self, query: QuerySchema) -> list[QueryResultSchema]:
         # for now, ignore q and return all documents
         docs = await self.document_crud.find_all()
         return [QueryResultSchema(content=d.content, score=0.5) for d in docs]

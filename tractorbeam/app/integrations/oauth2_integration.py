@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 import httpx
 from pydantic import Field
 
+from ..exceptions import AppException
 from .base_integration import (
     BaseConnectionModel,
     BaseIntegration,
@@ -73,10 +74,9 @@ class OAuth2Integration(BaseIntegration):
         response = httpx.post(url, headers=headers, json=data)
         data = response.json()
 
-        if response.status_code != 200:  # noqa: PLR2004
-            raise Exception(
-                f"Failed to get access token: {data.get('error_description') or data.get('error') or response.text}",
-            )
+        if response.status_code != httpx.codes.OK:
+            msg = f"Failed to get access token: {data.get('error_description') or data.get('error') or response.text}"
+            raise AppException.IntegrationError(msg)
 
         token = {
             "access_token": data.get("access_token"),
@@ -100,5 +100,4 @@ class OAuth2Integration(BaseIntegration):
         token: dict,
     ):
         """Refresh an expired access token."""
-        # TODO
-        return token
+        raise NotImplementedError

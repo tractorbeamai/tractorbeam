@@ -99,7 +99,7 @@ async def token_with_claims():
 
 
 @pytest.fixture(autouse=True)
-async def settings():
+async def _settings():
     def mock_get_settings():
         return Settings(
             integrations={

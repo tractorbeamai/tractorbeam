@@ -164,7 +164,7 @@ class TestIntegrationRegistry:
         registry = IntegrationRegistry.from_settings(settings)
 
         assert isinstance(registry, IntegrationRegistry)
-        assert len(registry.integrations) == 2  # noqa: PLR2004
+        assert len(registry.integrations) == 2
         assert registry.integrations["mock1"] == MockOAuth2Integration
         assert registry.integrations["mock2"] == MockOAuth2Integration
 

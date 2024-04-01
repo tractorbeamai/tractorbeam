@@ -9,7 +9,6 @@ app = FastAPI()
 
 @app.exception_handler(AppExceptionCase)
 async def custom_app_exception_handler(_request, exception):
-    print("Exception!", exception)
     return JSONResponse(
         status_code=exception.status_code,
         content={

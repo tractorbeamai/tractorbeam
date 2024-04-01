@@ -22,9 +22,8 @@ class IntegrationRegistry:
         slug = slug or integration.default_slug
 
         if slug in self.integrations:
-            raise AppException.IntegrationAlreadyExists(
-                f'An Integration with slug, "{slug}" already exists. If you are trying to add multiple configurations for one integration, a slug must be provided for subsequent configurations.',
-            )
+            msg = f'An Integration with slug, "{slug}" already exists. If you are trying to add multiple configurations for one integration, a slug must be provided for subsequent configurations.'
+            raise AppException.IntegrationAlreadyExists(msg)
 
         self.integrations[slug] = integration
 
