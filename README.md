@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="./header.png" width="350" title="hover text">
-</p>
+![Tractorbeam Header Image](/header.png)
 
 # Tractorbeam
 [Docs](https://tractorbeam.ai/docs) | [Twitter](https://tractorbeam.ai/twitter) | [GitHub](https://tractorbeam.ai/github-org) | [Discord](https://tractorbeam.ai/discord)
