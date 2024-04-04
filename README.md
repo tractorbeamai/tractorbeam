@@ -4,7 +4,10 @@
 
 # 🛸 Tractorbeam
 
-Tractorbeam is a data integration layer for LLM applications. Connect your AI app to your customer's SaaS apps in just one integration.
+[Docs](https://tractorbeam.ai/docs) | [Twitter](https://tractorbeam.ai/twitter) | [GitHub](https://tractorbeam.ai/github-org) | [Discord](https://tractorbeam.ai/discord)
+
+
+Tractorbeam is a production-ready RAG server for LLM applications. Connect your AI app to databases, documents, and your customer's SaaS apps in just one integration.
 
 [![Tractorbeam Discord Invite](https://img.shields.io/discord/1201962167767932978?color=%237289DA&label=chat&logo=discord&logoColor=white)](https://tractorbeam.ai/discord)
 
@@ -14,9 +17,6 @@ Tractorbeam is a data integration layer for LLM applications. Connect your AI ap
 - 🛠 **Transform** your data with powerful preprocessing tools, including normalization, tokenization, and entity recognition.
 - 🔍 **Query** your data with multi-vector semantic search, powered by state-of-the-art neural search (ColBERTv2).
 - 📈 **Evaluate** your pipelines' accuracy, truthfullness, latency, and more with our powerful retrieval analytics service.
-
-[Docs](https://tractorbeam.ai/docs) | [Twitter](https://tractorbeam.ai/twitter) | [GitHub](https://tractorbeam.ai/github-org) | [Discord](https://tractorbeam.ai/discord)
-
 ----
 
 ## Get Started
