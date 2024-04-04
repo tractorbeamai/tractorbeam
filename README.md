@@ -1,4 +1,4 @@
-![Tractorbeam Header Image](/header.png)
+![Tractorbeam Header Image](/header.svg)
 
 ----
 
