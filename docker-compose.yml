@@ -9,7 +9,7 @@ services:
       POSTGRES_DB: "tractorbeam"
       PGDATA: /var/lib/postgresql/data
     volumes:
-      - ./data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -17,6 +17,16 @@ services:
       interval: 1s
       timeout: 5s
       retries: 3
+  vespa:
+    image: "vespaengine/vespa:latest"
+    user: "vespa:vespa"
+    volumes:
+      - ./data/vespa/var:/opt/vespa/var
+      - ./data/vespa/logs:/opt/vespa/logs
+    ports:
+      - "8080:8080"
+      - 19071:19071
+      - 19092:19092
   tractorbeam:
     build: ./tractorbeam
     command: bash -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 80 --reload"
