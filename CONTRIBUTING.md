@@ -26,7 +26,15 @@ Pull requests are the best way to propose changes to the codebase. We actively w
 
 ### Setting Up Your Development Environment
 
-// TODO
+1. Install [Python 3.12](https://www.python.org/downloads/release/python-312/), [Docker (v24.0.0 or later)](https://docs.docker.com/install/), and [Docker Compose (V2)](https://docs.docker.com/compose/install/).
+1. Clone the repository.
+   ```
+   git clone --depth 1 https://github.com/tractorbeamai/tractorbeam.git
+   ```
+1. Start the application services in the background (`-d`).
+   ```
+   docker compose up -d
+   ```
 
 ## Code of Conduct
 
