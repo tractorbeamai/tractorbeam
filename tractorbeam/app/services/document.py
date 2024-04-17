@@ -10,10 +10,13 @@ from ..exceptions import AppException
 from ..models import Document
 from ..schemas.chunk import ChunkCreateSchema
 from ..schemas.document import DocumentCreateSchema, DocumentSchema
+from ..schemas.point import PointCreateSchema
 from ..schemas.query import QueryResultSchema, QuerySchema
 from ..schemas.token import TokenClaimsSchema
 from ..security import get_token_claims
 from .chunk import ChunkCRUD, get_chunk_crud
+from .embedding import EmbeddingService, get_embedding_service
+from .point import PointCRUD, get_point_crud
 
 
 class DocumentCRUD:
@@ -75,9 +78,13 @@ class DocumentService:
         self,
         document_crud: DocumentCRUD,
         chunk_crud: ChunkCRUD,
+        point_crud: PointCRUD,
+        embedding_service: EmbeddingService,
     ):
         self.document_crud = document_crud
         self.chunk_crud = chunk_crud
+        self.point_crud = point_crud
+        self.embedding_service = embedding_service
 
     async def create(self, item: DocumentCreateSchema) -> DocumentSchema:
         # Create a parent document.
@@ -88,12 +95,23 @@ class DocumentService:
         # Segement and save individual child chunks.
         content_chunks = item.content.split("\n")
         for chunk in content_chunks:
-            await self.chunk_crud.create(
+            db_chunk = await self.chunk_crud.create(
                 ChunkCreateSchema(
                     content=chunk,
                     document_id=doc.id,
                 ),
             )
+            if not db_chunk:
+                raise AppException.ChunkCreationFailed
+            embedding = self.embedding_service.get_dense_embedding(chunk)
+            db_point = await self.point_crud.create(
+                PointCreateSchema(
+                    id=db_chunk.id,
+                    vector=embedding,
+                ),
+            )
+            if not db_point:
+                raise AppException.PointCreationFailed
 
         # Retrieve the parent document.
         doc_with_chunks = await self.document_crud.find_one(doc.id)
@@ -132,5 +150,7 @@ def get_document_crud(
 def get_document_service(
     document_crud: Annotated[DocumentCRUD, Depends(get_document_crud)],
     chunk_crud: Annotated[ChunkCRUD, Depends(get_chunk_crud)],
+    point_crud: Annotated[PointCRUD, Depends(get_point_crud)],
+    embedding_service: Annotated[EmbeddingService, Depends(get_embedding_service)],
 ):
-    return DocumentService(document_crud, chunk_crud)
+    return DocumentService(document_crud, chunk_crud, point_crud, embedding_service)

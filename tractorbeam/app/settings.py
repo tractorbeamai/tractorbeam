@@ -14,6 +14,10 @@ from pydantic_settings import (
 
 class Settings(BaseSettings):
     database_url: str
+    openai_api_key: str
+    qdrant_url: str
+    qdrant_port: int
+    qdrant_collection_name: str = "chunks"
     secret: str
     cloud: bool = False
     api_keys: list[str]

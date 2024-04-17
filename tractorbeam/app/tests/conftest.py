@@ -1,8 +1,9 @@
 import asyncio
-from collections.abc import AsyncGenerator, Callable, Generator
+from collections.abc import AsyncGenerator, Generator
 from typing import Annotated
 
 import pytest
+from asgi_lifespan import LifespanManager
 from fastapi import FastAPI, Security
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,23 +41,21 @@ async def session() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest.fixture()
-def override_get_db(session: AsyncSession) -> Callable:
+async def app_with_test_overrides(
+    session: AsyncSession,
+):
     async def _override_get_db():
         yield session
 
-    return _override_get_db
+    app.dependency_overrides[get_db] = _override_get_db
+    async with LifespanManager(app) as lifespan:
+        yield lifespan.app
 
 
 @pytest.fixture()
-def app_with_db_override(override_get_db: Callable) -> FastAPI:
-    app.dependency_overrides[get_db] = override_get_db
-    return app
-
-
-@pytest.fixture()
-async def client(app_with_db_override: FastAPI) -> AsyncGenerator:
+async def client(app_with_test_overrides: FastAPI) -> AsyncGenerator:
     async with AsyncClient(
-        transport=ASGITransport(app=app_with_db_override),  # type: ignore[arg-type]
+        transport=ASGITransport(app=app_with_test_overrides),  # type: ignore[arg-type]
         base_url="http://testhost",
     ) as ac:
         yield ac

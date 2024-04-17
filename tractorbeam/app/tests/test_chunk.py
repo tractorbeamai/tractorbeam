@@ -9,9 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import get_db
 from ..main import app
 from ..models import Chunk
+from ..qdrant import get_qdrant_client
+from ..schemas.chunk import ChunkCreateSchema
 from ..schemas.token import TokenClaimsSchema
 from ..security import get_token_claims
-from ..services.chunk import ChunkCRUD, get_chunk_crud
+from ..services.chunk import ChunkCRUD, ChunkService, get_chunk_crud
+from ..services.embedding import FakeEmbeddingService
+from ..services.point import get_point_crud
+from ..settings import get_settings
 
 
 @pytest.mark.asyncio()
@@ -492,33 +497,35 @@ class TestQueryChunks:
     ):
         token, claims = token_with_claims
 
-        # Create multiple chunks for testing
-        chunk1 = Chunk(
-            content="First query test chunk",
-            tenant_id=claims.tenant_id,
-            tenant_user_id=claims.tenant_user_id,
+        # Create multiple chunks for testing using ChunkService
+        chunk_service = ChunkService(
+            chunk_crud=get_chunk_crud(
+                session,
+                claims,
+            ),
+            point_crud=get_point_crud(
+                get_qdrant_client(),
+                claims,
+                get_settings(),
+            ),
+            embedding_service=FakeEmbeddingService(),  # type: ignore[arg-type]
         )
-        chunk2 = Chunk(
-            content="Second query test chunk",
-            tenant_id=claims.tenant_id,
-            tenant_user_id=claims.tenant_user_id,
-        )
-        session.add(chunk1)
-        session.add(chunk2)
-        await session.commit()
+        await chunk_service.create(ChunkCreateSchema(content="First query test chunk"))
+        await chunk_service.create(ChunkCreateSchema(content="Second query test chunk"))
 
         # Query chunks
         response = await client.post(
             "/api/v1/chunks/query/",
             headers={"Authorization": f"Bearer {token}"},
-            json={"q": "query test"},
+            json={"q": "First query test query"},
         )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 2
-        assert data[0]["content"] == "First query test chunk"
-        assert data[1]["content"] == "Second query test chunk"
+        contents = {d["content"] for d in data}
+        assert "First query test chunk" in contents
+        assert "Second query test chunk" in contents
 
     async def test_query_chunks_different_tenant(
         self: "TestQueryChunks",

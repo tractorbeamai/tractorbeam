@@ -1,10 +1,12 @@
 import pytest
 from fastapi import status
 from httpx import AsyncClient
+from qdrant_client import QdrantClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from ..database import get_db
 from ..main import app
+from ..qdrant import get_qdrant_client
 
 
 @pytest.mark.asyncio()
@@ -56,3 +58,23 @@ class TestHealthChecks:
 
         response = await client.get("/api/v1/health/db")
         assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+
+    async def test_health_vector_db_connected(
+        self: "TestHealthChecks",
+        client: AsyncClient,
+    ):
+        response = await client.get("/api/v1/health/vector-db")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == "OK"
+
+    async def test_health_vectordb_missing(
+        self: "TestHealthChecks",
+        client: AsyncClient,
+    ):
+        async def get_bad_vector_db():
+            return QdrantClient(host="bad_url")
+
+        app.dependency_overrides[get_qdrant_client] = get_bad_vector_db
+        response = await client.get("/api/v1/health/vector-db")
+        assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+        del app.dependency_overrides[get_qdrant_client]

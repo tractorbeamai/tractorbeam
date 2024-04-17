@@ -14,6 +14,11 @@ class AppException:
             status_code = 503
             AppExceptionCase.__init__(self, status_code, message)
 
+    class VectorDatabaseConnectionFailed(AppExceptionCase):
+        def __init__(self, message: str | None = None):
+            status_code = 503
+            AppExceptionCase.__init__(self, status_code, message)
+
     class APIKeyInvalid(AppExceptionCase):
         def __init__(self, message: str | None = None):
             status_code = 401
@@ -80,6 +85,21 @@ class AppException:
             AppExceptionCase.__init__(self, status_code, message)
 
     class ConnectionNotFound(AppExceptionCase):
+        def __init__(self, message: str | None = None):
+            status_code = 404
+            AppExceptionCase.__init__(self, status_code, message)
+
+    class PointCreationFailed(AppExceptionCase):
+        def __init__(self, message: str | None = None):
+            status_code = 500
+            AppExceptionCase.__init__(self, status_code, message)
+
+    class PointQueryFailed(AppExceptionCase):
+        def __init__(self, message: str | None = None):
+            status_code = 500
+            AppExceptionCase.__init__(self, status_code, message)
+
+    class PointNotFound(AppExceptionCase):
         def __init__(self, message: str | None = None):
             status_code = 404
             AppExceptionCase.__init__(self, status_code, message)

@@ -1,10 +1,23 @@
+from contextlib import asynccontextmanager
+
 from fastapi import APIRouter, FastAPI
 from fastapi.responses import JSONResponse
 
 from .exceptions import AppExceptionCase
+from .qdrant import ensure_collection
 from .routers import chunk, connection, document, health, integration, token
+from .settings import get_settings
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # check if collection exists
+    await ensure_collection(get_settings().qdrant_collection_name)
+
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.exception_handler(AppExceptionCase)
