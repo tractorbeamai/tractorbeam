@@ -1,6 +1,6 @@
 ![Tractorbeam Header Image](/header.svg)
 
-----
+---
 
 # 🛸 Tractorbeam
 
@@ -16,7 +16,7 @@ Tractorbeam is a production-ready RAG server for LLM applications. Connect your 
 
 To get started, sign up for free to [Tractorbeam Cloud](https://tractorbeam.ai/). Or, keep reading to learn how to self-host your own instance.
 
-----
+---
 
 ## Get Started
 
@@ -28,7 +28,7 @@ The fastest and most reliable way to get started with Tractorbeam is signing up 
 
 // TODO instructions
 
-Please note that we do not provide customer support for open source deployments. 
+Please note that we do not provide customer support for open source deployments.
 
 ## Contributing
 
@@ -42,9 +42,6 @@ If you have found a security vulnerability in any part of our software, we encou
 
 Join our [Discord community](https://tractorbeam.ai/discord) to stay up to date with the latest news, get help, and connect with other users and the developers.
 
-
 ## License
 
 Tractorbeam is licensed under the [MIT license](https://github.com/tractorbeamai/tractorbeam/blob/main/LICENSE).
-
-
